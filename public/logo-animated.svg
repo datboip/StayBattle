@@ -1,0 +1,127 @@
+<svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="StayBattle — settle the vacation argument">
+  <!--
+    Animated brand mark. Loops every 14 seconds (ambient pace —
+    not a splash, not attention-demanding). Walks the story:
+    blank → STAY appears with a solid cyan house → peaceful pause →
+    a small spark builds → LIGHTNING STRIKES with a bright flash →
+    house splits, right half slides + recolours rose, BATTLE
+    appears → final dueling-houses state holds → everything fades →
+    loop.
+
+    Single self-contained file. CSS keyframes inside the SVG.
+    Transparent background. Respects prefers-reduced-motion.
+  -->
+  <style>
+    /* ─── timing legend (8s total) ──────────────────────────────────
+       0%–5%      blank
+       5%–12%     STAY + cyan house entrance
+       12%–40%    peaceful STAY hold
+       40%–43%    spark forms (lightning grows)
+       43%–47%    LIGHTNING STRIKE — flash + shake
+       47%–53%    house splits, right half recolours, BATTLE fades in
+       53%–86%    final state holds, lightning idle-pulses
+       86%–95%    fade everything out
+       95%–100%   blank, ready to loop
+       ──────────────────────────────────────────────────────────── */
+
+    @keyframes sb-stay {
+      0%, 4%     { opacity: 0; transform: translateX(-14px); }
+      10%, 88%   { opacity: 1; transform: translateX(0); }
+      94%, 100%  { opacity: 0; transform: translateX(-14px); }
+    }
+    @keyframes sb-house {
+      0%, 4%     { opacity: 0; transform: scale(0.7); }
+      10%, 88%   { opacity: 1; transform: scale(1); }
+      94%, 100%  { opacity: 0; transform: scale(0.7); }
+    }
+    @keyframes sb-battle {
+      0%, 45%    { opacity: 0; transform: translateX(10px); }
+      52%, 86%   { opacity: 1; transform: translateX(0); }
+      92%, 100%  { opacity: 0; transform: translateX(10px); }
+    }
+    @keyframes sb-lightning {
+      0%, 38%    { opacity: 0;    transform: scale(0.2); }
+      41%        { opacity: 0.45; transform: scale(0.6); }   /* spark forms */
+      43%        { opacity: 1;    transform: scale(1.25); }  /* STRIKE peak */
+      46%        { opacity: 0.7;  transform: scale(0.92); }  /* release */
+      53%, 70%   { opacity: 0.95; transform: scale(1); }
+      78%        { opacity: 0.75; transform: scale(1); }     /* idle pulse */
+      86%        { opacity: 0.95; transform: scale(1); }
+      94%, 100%  { opacity: 0;    transform: scale(0.2); }
+    }
+    @keyframes sb-right-shift {
+      0%, 46%    { transform: translateX(0); }
+      53%, 86%   { transform: translateX(6px); }
+      94%, 100%  { transform: translateX(0); }
+    }
+    @keyframes sb-right-recolor {
+      0%, 46%    { fill: #06b6d4; }                /* cyan: still part of solid house */
+      53%, 86%   { fill: #f43f5e; }                /* rose: post-strike */
+      94%, 100%  { fill: #06b6d4; }
+    }
+    @keyframes sb-flash {
+      0%, 41%    { opacity: 0; }
+      43%        { opacity: 0.7; }                 /* white flash on strike */
+      48%        { opacity: 0; }
+      100%       { opacity: 0; }
+    }
+    @keyframes sb-shake {
+      0%, 42%    { transform: translateX(0); }
+      44%        { transform: translateX(-2px); }
+      46%        { transform: translateX(2px); }
+      48%        { transform: translateX(0); }
+      100%       { transform: translateX(0); }
+    }
+
+    .sb-stay      { opacity: 0; transform-origin: center;        animation: sb-stay 14s ease-in-out infinite; }
+    .sb-house     { opacity: 0; transform-origin: 200px 130px;   animation: sb-house 14s ease-in-out infinite, sb-shake 14s ease-in-out infinite; }
+    .sb-battle    { opacity: 0; transform-origin: center;        animation: sb-battle 14s ease-in-out infinite; }
+    .sb-right     { transform-origin: 200px 130px;               animation: sb-right-shift 14s ease-in-out infinite, sb-right-recolor 14s ease-in-out infinite; }
+    .sb-lightning { opacity: 0; transform-origin: 200px 95px;    animation: sb-lightning 14s ease-in-out infinite; }
+    .sb-flash     { opacity: 0; animation: sb-flash 14s ease-in-out infinite; pointer-events: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sb-stay, .sb-house, .sb-battle, .sb-lightning { opacity: 1; transform: none; animation: none; }
+      .sb-right { transform: translateX(6px); animation: none; fill: #f43f5e; }
+      .sb-flash { display: none; }
+    }
+  </style>
+
+  <!-- HOUSE GROUP -->
+  <g class="sb-house">
+    <!-- Left half (always cyan): roof + body + window grid -->
+    <path d="M 200 60 L 252 110 L 252 170 L 148 170 L 148 110 Z" fill="#06b6d4"/>
+    <rect x="170" y="125" width="22" height="22" fill="#0a0a0f" rx="1"/>
+    <rect x="173" y="128" width="6" height="6" fill="#06b6d4"/>
+    <rect x="183" y="128" width="6" height="6" fill="#06b6d4"/>
+    <rect x="173" y="138" width="6" height="6" fill="#06b6d4"/>
+    <rect x="183" y="138" width="6" height="6" fill="#06b6d4"/>
+
+    <!-- Right half (starts cyan = solid house, then shifts + recolours rose) -->
+    <g class="sb-right">
+      <path d="M 200 60 L 252 110 L 252 170 L 200 170 Z" fill="#06b6d4"/>
+      <rect x="208" y="125" width="22" height="22" fill="#0a0a0f" rx="1"/>
+      <rect x="211" y="128" width="6" height="6" fill="currentColor" style="fill: rgba(255,255,255,0.05)"/>
+      <rect x="221" y="128" width="6" height="6" fill="currentColor" style="fill: rgba(255,255,255,0.05)"/>
+      <rect x="211" y="138" width="6" height="6" fill="currentColor" style="fill: rgba(255,255,255,0.05)"/>
+      <rect x="221" y="138" width="6" height="6" fill="currentColor" style="fill: rgba(255,255,255,0.05)"/>
+    </g>
+
+    <!-- Lightning bolt — appears with the strike, then idle-pulses -->
+    <path class="sb-lightning"
+          d="M 204 62 L 192 108 L 204 108 L 196 162 L 218 102 L 206 102 L 214 62 Z"
+          fill="#ffffff" stroke="#fde68a" stroke-width="1"
+          filter="drop-shadow(0 0 8px rgba(255,255,255,0.7))"/>
+  </g>
+
+  <!-- White flash overlay during the strike -->
+  <rect class="sb-flash" x="0" y="0" width="400" height="220" fill="#ffffff"/>
+
+  <!-- TEXT — "STAY" (rose) + "BATTLE" (cyan), joined as one wordmark -->
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+     font-weight="900" font-size="32" letter-spacing="-0.5">
+    <text class="sb-stay"   x="142" y="205" fill="#f43f5e">STAY</text>
+    <text class="sb-battle" x="206" y="205" fill="#06b6d4">BATTLE</text>
+  </g>
+</svg>

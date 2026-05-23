@@ -1,0 +1,31 @@
+name: Bug report
+description: Something's broken or behaving weirdly.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: One short paragraph. What did you do, what did you expect, what did you get?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Repro steps
+      placeholder: |
+        1. Paste this URL: …
+        2. Click vote
+        3. Page reloads with no card
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "macOS 14, Chrome 122, Node 20, npm run dev"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
+      description: Screenshots, logs from `npm run dev`, browser console errors.

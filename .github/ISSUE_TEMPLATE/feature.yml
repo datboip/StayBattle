@@ -1,0 +1,16 @@
+name: Feature request
+description: An idea for making StayBattle cooler.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: pitch
+    attributes:
+      label: What do you want?
+      description: One paragraph. Use cases > implementation details.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      placeholder: I tried X, but Y didn't fit because…

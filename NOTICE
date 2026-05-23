@@ -1,0 +1,34 @@
+StayBattle
+==========
+
+Copyright © StayBattle contributors.
+
+This software is licensed under the GNU Affero General Public License,
+Version 3 (AGPL-3.0-only). See the LICENSE file for the full terms.
+
+Third-Party Notices
+-------------------
+
+This software incorporates components from third parties under their
+own licenses. The following notices apply to specific components:
+
+* react-leaflet (5.0.0) — Hippocratic License 2.1
+  © Paul Le Cam — https://github.com/PaulLeCam/react-leaflet
+  This component adds ethical-use restrictions on top of permissive
+  MIT-style terms. Users of StayBattle who redistribute MUST respect
+  both AGPL-3.0 and the Hippocratic License's ethical-use clauses.
+  Full text: https://firstdonoharm.dev/version/2/1/license/
+
+* @react-leaflet/core (3.0.0) — Hippocratic License 2.1
+  Same conditions as react-leaflet above.
+
+* sharp's libvips bindings (@img/sharp-libvips-*) — LGPL-3.0-or-later
+  Native shared libraries dynamically linked at runtime. The libvips
+  source is available at https://github.com/libvips/libvips. Per LGPL
+  §6, users may relink against modified libvips.
+
+* leaflet — BSD-2-Clause
+* All other production dependencies — MIT, Apache-2.0, BSD-*, ISC,
+  CC-BY-4.0, or 0BSD. All AGPL-compatible.
+
+For the full breakdown, run: npm list --all

@@ -1,0 +1,613 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #07070b;
+  --color-foreground: #fafafa;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  /* Always reserve space for the vertical scrollbar so the layout never
+     shifts horizontally when content overflows. `overflow-y: scroll` forces
+     the gutter on every browser (including older ones that don't support
+     `scrollbar-gutter`); the gutter property adds a hint for newer ones. */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  /* Tells the browser to render native UI (date pickers, form widgets,
+     resizers, etc.) with the dark variant. Without this, an iOS date picker
+     in dark CSS shows up as a glaring white sheet. */
+  color-scheme: dark;
+}
+
+/* Text selection — default is bright blue, jarring on the neon palette.
+   Pin it to a rose tint that matches the brand. */
+::selection {
+  background: rgba(244, 63, 94, 0.35);
+  color: #fafafa;
+}
+
+/* Browser autofill (Chrome / Safari) tries to paint the input yellow with
+   dark text. Override so the input stays consistent with the rest of the
+   dark theme. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #fafafa;
+  -webkit-box-shadow: 0 0 0 1000px #18181b inset;
+  caret-color: #fafafa;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Default Tailwind/preflight font-color for placeholder text on inputs that
+   inherit `text-zinc-100`: the placeholder uses the input color at 50% on
+   some browsers, which can be hard to read. Set an explicit floor. */
+input::placeholder,
+textarea::placeholder {
+  color: #71717a;
+  opacity: 1;
+}
+
+html,
+body {
+  background: #07070b;
+  color: #fafafa;
+  font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+}
+
+/* While `theme-transitioning` is on the <html> element, gently animate the
+   color-related properties so the swap eases instead of flashing. The class
+   is added by the theme toggle and removed ~450ms later — outside of that
+   window, normal hover/focus transitions on individual components are not
+   touched. */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition-property: background-color, color, border-color, fill, stroke,
+    box-shadow, opacity !important;
+  transition-duration: 380ms !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ---------- LIGHT MODE ----------
+   Same color language as dark — sunset splashes, gradient strokes — but
+   tuned for a warm-white base so the brand vibe survives. Activated by
+   `data-theme="light"` on <html>. */
+html[data-theme="light"] {
+  /* Warm off-white instead of pure white — feels less clinical. */
+  background: #faf8f4;
+  color: #18181b;
+  color-scheme: light;
+}
+html[data-theme="light"] body {
+  background: #faf8f4;
+  color: #18181b;
+}
+/* Sunset / dawn glow: brighter on light bg so the color drama actually shows.
+   Multiple radial splashes give a watercolor "bloom" feel instead of one flat
+   gradient. */
+html[data-theme="light"] body::before {
+  background:
+    radial-gradient(60% 70% at 75% 0%, rgba(244, 63, 94, 0.22) 0%, transparent 60%),
+    radial-gradient(55% 60% at 20% 5%, rgba(6, 182, 212, 0.18) 0%, transparent 60%),
+    radial-gradient(45% 55% at 50% 100%, rgba(249, 115, 22, 0.16) 0%, transparent 70%),
+    radial-gradient(40% 50% at 85% 85%, rgba(34, 211, 238, 0.14) 0%, transparent 70%),
+    radial-gradient(40% 50% at 10% 70%, rgba(251, 113, 133, 0.12) 0%, transparent 70%);
+}
+/* Keep the scanline texture too — barely visible but adds depth. */
+html[data-theme="light"] body::after {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.012) 0,
+      rgba(0, 0, 0, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mix-blend-mode: multiply;
+}
+
+/* Surface flips */
+html[data-theme="light"] [class*="bg-zinc-950"] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] [class*="bg-zinc-900"] {
+  background-color: #f4f4f5 !important;
+}
+/* Translucent variants (bg-zinc-900/60 etc) keep some translucency. */
+html[data-theme="light"] [class*="bg-zinc-950/"] {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+html[data-theme="light"] [class*="bg-zinc-900/"] {
+  background-color: rgba(244, 244, 245, 0.85) !important;
+}
+
+/* Text flips — dark-mode text becomes dark text on light. */
+html[data-theme="light"] [class*="text-zinc-50"],
+html[data-theme="light"] [class*="text-zinc-100"],
+html[data-theme="light"] [class*="text-zinc-200"] {
+  color: #18181b !important;
+}
+html[data-theme="light"] [class*="text-zinc-300"] {
+  color: #27272a !important;
+}
+html[data-theme="light"] [class*="text-zinc-400"] {
+  color: #52525b !important;
+}
+html[data-theme="light"] [class*="text-zinc-500"] {
+  color: #71717a !important;
+}
+html[data-theme="light"] [class*="text-zinc-600"] {
+  color: #a1a1aa !important;
+}
+
+/* Borders flip from dark to light grey. */
+html[data-theme="light"] [class*="border-zinc-800"],
+html[data-theme="light"] [class*="border-zinc-700"] {
+  border-color: #d4d4d8 !important;
+}
+html[data-theme="light"] [class*="border-zinc-900"] {
+  border-color: #e4e4e7 !important;
+}
+
+/* Fighter cards in light mode — clean warm-white with a subtle top sheen,
+   plus a slightly more visible gradient stroke so the brand color is
+   present on every card. */
+html[data-theme="light"] .sb-fighter-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fafaf7 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 12px 30px -18px rgba(0, 0, 0, 0.12);
+}
+html[data-theme="light"] .sb-fighter-card::before {
+  /* Slightly stronger gradient stroke in light mode so the brand color
+     reads on the white surface. */
+  background: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.65),
+    rgba(244, 63, 94, 0.65) 50%,
+    rgba(249, 115, 22, 0.65)
+  );
+  opacity: 0.4;
+}
+html[data-theme="light"] .sb-fighter-card:hover::before,
+html[data-theme="light"] .sb-fighter-card:focus-within::before {
+  opacity: 0.85;
+}
+
+/* Brand wordmark "Battle" lives at `text-zinc-50` which the override above
+   would turn dark. Force it stays bold ink-black in light mode. */
+html[data-theme="light"] [class*="text-zinc-50"] {
+  color: #09090b !important;
+}
+
+/* Leaflet popups */
+html[data-theme="light"] .leaflet-popup-content-wrapper,
+html[data-theme="light"] .leaflet-popup-tip {
+  background: #ffffff !important;
+  color: #18181b !important;
+  border: 1px solid #d4d4d8;
+}
+html[data-theme="light"] .leaflet-container {
+  background: #f4f4f5 !important;
+}
+
+/* Inputs with custom dark bgs read OK with the bg-zinc override, but their
+   placeholder needs adjustment. */
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder {
+  color: #a1a1aa;
+}
+
+/* Dark gradient surfaces (the invite code box, the logo filler tile, etc.)
+   need a light gradient swap — the bg-zinc-950 override can't touch
+   bg-gradient-* classes because gradient stops are CSS variables. Tag those
+   elements with .sb-deep-surface in the JSX so they swap cleanly. */
+.sb-deep-surface {
+  background: linear-gradient(180deg, #0e0e14 0%, #08080c 100%);
+}
+html[data-theme="light"] .sb-deep-surface {
+  /* Warm gradient with a hint of the brand sunset — not just flat grey.
+     Keeps the visual interest the dark version had. */
+  background:
+    radial-gradient(120% 70% at 70% 0%, rgba(244, 63, 94, 0.10) 0%, transparent 60%),
+    radial-gradient(120% 70% at 30% 100%, rgba(6, 182, 212, 0.10) 0%, transparent 60%),
+    linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%) !important;
+  border-color: #d4d4d8 !important;
+}
+
+/* Translucent accent backgrounds (bg-cyan-500/10, bg-rose-500/10, etc.) are
+   invisible on a white surface. Darken them slightly in light mode so the
+   highlighted callouts actually read. */
+html[data-theme="light"] [class*="bg-cyan-500/1"],
+html[data-theme="light"] [class*="bg-cyan-500/5"] {
+  background-color: rgba(6, 182, 212, 0.14) !important;
+}
+html[data-theme="light"] [class*="bg-rose-500/1"],
+html[data-theme="light"] [class*="bg-rose-500/5"] {
+  background-color: rgba(244, 63, 94, 0.14) !important;
+}
+html[data-theme="light"] [class*="bg-emerald-500/1"],
+html[data-theme="light"] [class*="bg-emerald-500/5"] {
+  background-color: rgba(16, 185, 129, 0.14) !important;
+}
+html[data-theme="light"] [class*="bg-amber-500/1"],
+html[data-theme="light"] [class*="bg-amber-500/5"] {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+
+/* Light-tinted accent text (text-cyan-100/200, text-rose-200, etc.) is
+   unreadable on a white-ish background. Bump to mid-saturation variants. */
+html[data-theme="light"] [class*="text-cyan-100"],
+html[data-theme="light"] [class*="text-cyan-200"],
+html[data-theme="light"] [class*="text-cyan-300"] {
+  color: #0e7490 !important;
+}
+html[data-theme="light"] [class*="text-rose-100"],
+html[data-theme="light"] [class*="text-rose-200"],
+html[data-theme="light"] [class*="text-rose-300"] {
+  color: #be123c !important;
+}
+html[data-theme="light"] [class*="text-emerald-100"],
+html[data-theme="light"] [class*="text-emerald-200"],
+html[data-theme="light"] [class*="text-emerald-300"] {
+  color: #047857 !important;
+}
+html[data-theme="light"] [class*="text-amber-100"],
+html[data-theme="light"] [class*="text-amber-200"],
+html[data-theme="light"] [class*="text-amber-300"] {
+  color: #b45309 !important;
+}
+
+/* Custom scrollbar tones for light mode. */
+html[data-theme="light"] * {
+  scrollbar-color: #a1a1aa transparent;
+}
+html[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a1a1aa 0%, #71717a 100%);
+}
+
+/* SubmissionTeaser uses zinc-950 fade gradients at the edges of the
+   scrolling strip to fade tiles into the page background. In light mode
+   those need to fade into the page's warm-white instead of zinc-950. */
+/* Only the ScrollStrip edge fades (bare `from-zinc-950`, no alpha). The
+   `:not([class*="from-zinc-950/"])` keeps this from clobbering the photo
+   vignette overlays below, which use the alpha variant `from-zinc-950/30`. */
+html[data-theme="light"]
+  [class*="bg-gradient-to-r"][class*="from-zinc-950"][class*="to-transparent"]:not([class*="from-zinc-950/"]) {
+  background: linear-gradient(to right, #faf8f4, transparent) !important;
+}
+html[data-theme="light"]
+  [class*="bg-gradient-to-l"][class*="from-zinc-950"][class*="to-transparent"]:not([class*="from-zinc-950/"]) {
+  background: linear-gradient(to left, #faf8f4, transparent) !important;
+}
+/* In dark mode the `from-zinc-950/30` overlay sits on photos to anchor them
+   into the dark page. On a light page that overlay reads as a foggy white
+   wash — kill it entirely so the photos display at full color. */
+html[data-theme="light"] [class*="from-zinc-950/30"],
+html[data-theme="light"] [class*="from-zinc-950/"][class*="via-transparent"] {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* Autofill needs different inset shadow color on light. */
+html[data-theme="light"] input:-webkit-autofill,
+html[data-theme="light"] input:-webkit-autofill:hover,
+html[data-theme="light"] input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #18181b;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  caret-color: #18181b;
+}
+
+/* Global focus indicator — single source of truth, visible on dark bg. */
+:focus-visible {
+  outline: 2px solid #f43f5e;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Respect prefers-reduced-motion but only for elements explicitly marked
+   decorative. The submissions teaser and any other user-toggled animations
+   should still run when explicitly enabled. */
+@media (prefers-reduced-motion: reduce) {
+  *[data-motion="decorative"],
+  *[data-motion="decorative"]::before,
+  *[data-motion="decorative"]::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Crossfade for tile image swaps in the submissions teaser. */
+@keyframes sb-tile-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.sb-tile-fade-in {
+  animation: sb-tile-fade-in 900ms ease-out forwards;
+}
+
+/* Flashbang outline for the Airbnb-link warning dialog.
+ *
+ * Two animations stacked:
+ *   1. Initial pulse — box-shadow ramps from nothing to bright then
+ *      settles to a subtle persistent white outline. ~900ms.
+ *   2. Then forever after, a thin bright "highlight" traces around the
+ *      perimeter — like a sparkler running along the edge — courtesy
+ *      of a ::before pseudo with a rotating conic gradient masked to
+ *      just the outline ring.
+ *
+ * Net effect: dialog appears with a flash, then a gentle line keeps
+ * orbiting the rim so the warning never goes static.
+ */
+@property --sb-glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+/* Second registered angle so the trailing arc has its OWN animated
+ * variable rather than `calc(--sb-glow-angle + 180deg)` — that calc
+ * doesn't always re-evaluate per frame inside conic-gradients, which
+ * was making both arcs visually clump. */
+@property --sb-glow-angle-b {
+  syntax: "<angle>";
+  initial-value: 180deg;
+  inherits: false;
+}
+
+@keyframes sb-flashbang-pulse {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(255, 255, 255, 0),
+      0 0 0 0 rgba(255, 255, 255, 0);
+  }
+  35% {
+    box-shadow:
+      0 0 0 3px rgba(255, 255, 255, 0.95),
+      0 0 28px 8px rgba(255, 255, 255, 0.55);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.4),
+      0 0 12px 2px rgba(255, 255, 255, 0.12);
+  }
+}
+
+@keyframes sb-flashbang-trace {
+  to { --sb-glow-angle: 360deg; }
+}
+@keyframes sb-flashbang-trace-b {
+  from { --sb-glow-angle-b: 180deg; }
+  to   { --sb-glow-angle-b: 540deg; }
+}
+
+.sb-flashbang-glow {
+  position: relative;
+  animation: sb-flashbang-pulse 900ms ease-out forwards;
+}
+
+/* Two arcs tracing the perimeter, 180° apart from each other.
+ *
+ * Implementation: TWO pseudo-elements — ::before for the leading arc,
+ * ::after for the trailing one. Both share the same mask-composite
+ * trick (gradient visible only in a 2px ring around the modal edge)
+ * and the same rotation animation; the trailing arc uses the same
+ * --sb-glow-angle + 180° so it permanently sits opposite the leader.
+ *
+ * Two pseudos instead of two arcs in one gradient because conic-
+ * gradients with multiple distant stops sometimes render only one
+ * peak (browser quirks / interpolation). Two separate gradient
+ * layers guarantee both arcs paint.
+ */
+.sb-flashbang-glow::before,
+.sb-flashbang-glow::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+.sb-flashbang-glow::before {
+  background: conic-gradient(
+    from var(--sb-glow-angle, 0deg),
+    transparent 0deg,
+    rgba(255, 255, 255, 1) 8deg,
+    rgba(255, 255, 255, 0.45) 22deg,
+    transparent 40deg,
+    transparent 360deg
+  );
+  animation: sb-flashbang-trace 7s linear 900ms infinite;
+}
+
+.sb-flashbang-glow::after {
+  background: conic-gradient(
+    from var(--sb-glow-angle-b, 180deg),
+    transparent 0deg,
+    rgba(255, 255, 255, 1) 8deg,
+    rgba(255, 255, 255, 0.45) 22deg,
+    transparent 40deg,
+    transparent 360deg
+  );
+  animation: sb-flashbang-trace-b 7s linear 900ms infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-flashbang-glow { animation: none; }
+  .sb-flashbang-glow::before,
+  .sb-flashbang-glow::after { animation: none; opacity: 0; }
+}
+
+/* Custom scrollbars across the app — native ones break the dark/neon vibe. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3f3f46 0%, #27272a 100%);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.65) 0%, rgba(6, 182, 212, 0.65) 100%);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Deeper, harder fight-night neon glow. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20% -10% auto -10%;
+  height: 90vh;
+  z-index: -1;
+  background:
+    radial-gradient(60% 70% at 70% 0%, rgba(244, 63, 94, 0.30) 0%, transparent 65%),
+    radial-gradient(50% 60% at 20% 5%, rgba(6, 182, 212, 0.22) 0%, transparent 65%),
+    radial-gradient(40% 50% at 50% 0%, rgba(249, 115, 22, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Static-y texture on top of the glow — barely visible but kills the
+   smooth "rendered" feel that pure CSS gradients have. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.012) 0,
+      rgba(255, 255, 255, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mix-blend-mode: overlay;
+}
+
+/* Brand gradient — used on the wordmark + accents. */
+.sb-gradient-text {
+  background: linear-gradient(90deg, #22d3ee 0%, #34d399 35%, #fb7185 70%, #f97316 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sb-fight-label {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  color: #d4d4d8;
+}
+
+/* Roster grid — auto-fits as many columns as the viewport allows. */
+.sb-roster {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  align-items: start;
+}
+
+/* Card neon edge — slim gradient stroke that doesn't look like a Bootstrap card. */
+.sb-fighter-card {
+  position: relative;
+  border-radius: 0.25rem;
+  background: linear-gradient(180deg, #0e0e14 0%, #08080c 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 30px 60px -25px rgba(0, 0, 0, 0.9);
+}
+.sb-fighter-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.45), rgba(244, 63, 94, 0.45) 50%, rgba(249, 115, 22, 0.45));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.sb-fighter-card:hover::before,
+.sb-fighter-card:focus-within::before {
+  opacity: 1;
+}
+
+/* Stat slab — fixed-width type, hard rules, fight-poster vibe. */
+.sb-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.35rem 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+.sb-stat-row:first-child {
+  border-top: 0;
+}
+.sb-stat-label {
+  color: #a1a1aa;
+  text-transform: uppercase;
+}
+.sb-stat-value {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+/* Leaflet popup polish for the dark theme. */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #0e0e14 !important;
+  color: #fafafa !important;
+  border: 1px solid #27272a;
+}
+.leaflet-popup-content a {
+  color: #fb7185;
+}
+.leaflet-container {
+  background: #0a0a0f !important;
+}
+
+/* Screen-reader-only utility (no Tailwind class for this in v4 by default). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

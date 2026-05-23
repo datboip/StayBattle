@@ -1,0 +1,368 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { castVote, addComment } from "@/app/actions";
+import { useVoter } from "@/lib/voter";
+import { withTripDates, type TripDates } from "@/lib/trip";
+import type { ListingWithStats } from "@/lib/types";
+import { PhotoStrip } from "./PhotoStrip";
+import { AvailabilityBadge } from "./AvailabilityBadge";
+import { shortDisplayName } from "@/lib/title";
+import type { Battle } from "@/lib/battle";
+
+/**
+ * One-at-a-time review of every listing. Swipe-through review: see big card → leave a
+ * comment if you want → vote up/down/skip → next. Unvoted-by-you first, then
+ * the rest, so a returning user lands on something new.
+ */
+export function ReviewMode({
+  listings,
+  tripDates,
+  battle,
+  onClose,
+}: {
+  listings: ListingWithStats[];
+  tripDates: TripDates;
+  battle?: Battle | null;
+  onClose: () => void;
+}) {
+  const { voter } = useVoter();
+  const router = useRouter();
+  const [draft, setDraft] = useState("");
+  const [submitting, startTransition] = useTransition();
+  const [index, setIndex] = useState(0);
+  const stableOrderRef = useRef<ListingWithStats[]>([]);
+
+  // Compute a fixed order on first render: unseen first, then seen.
+  // We don't recompute when votes update mid-session — that would
+  // shuffle the deck under the user.
+  useMemo(() => {
+    if (stableOrderRef.current.length > 0) return;
+    if (!voter) {
+      stableOrderRef.current = [...listings];
+      return;
+    }
+    const unseen: ListingWithStats[] = [];
+    const seen: ListingWithStats[] = [];
+    for (const l of listings) {
+      const hasVote = l.votes.some((v) => v.voter_id === voter.id);
+      const hasComment = l.comments.some((c) => c.voter_id === voter.id);
+      if (hasVote || hasComment) seen.push(l);
+      else unseen.push(l);
+    }
+    stableOrderRef.current = [...unseen, ...seen];
+  }, [voter, listings]);
+
+  // Keep stale order on rerenders, but reflect freshly-cast votes so the
+  // current card shows updated vote state.
+  const order = useMemo(() => {
+    return stableOrderRef.current.map(
+      (l) => listings.find((x) => x.id === l.id) ?? l,
+    );
+  }, [listings]);
+
+  const current = order[index];
+  const total = order.length;
+
+  // Reset draft when we move to a new card.
+  useEffect(() => {
+    setDraft("");
+  }, [index]);
+
+  // Keyboard shortcuts inside review mode.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const inField =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      // Don't hijack typing keys when the comment box is focused.
+      if (inField) return;
+
+      if (e.key === "ArrowUp" || e.key === "u" || e.key === "U") {
+        e.preventDefault();
+        vote(1);
+      } else if (e.key === "ArrowDown" || e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        vote(-1);
+      } else if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  const myVote = (() => {
+    if (!voter || !current) return 0;
+    return current.votes.find((v) => v.voter_id === voter.id)?.value ?? 0;
+  })();
+
+  const goNext = () => {
+    if (index >= total - 1) return;
+    setIndex((i) => i + 1);
+  };
+  const goPrev = () => {
+    if (index <= 0) return;
+    setIndex((i) => i - 1);
+  };
+
+  const vote = (target: 1 | -1) => {
+    if (!voter || !current) return;
+    const next: 1 | -1 | 0 = myVote === target ? 0 : target;
+    startTransition(async () => {
+      await castVote(current.id, voter.id, voter.name, next);
+      router.refresh();
+    });
+  };
+
+  const postComment = async () => {
+    if (!voter || !current || !draft.trim()) return;
+    const text = draft;
+    startTransition(async () => {
+      const res = await addComment(current.id, voter.id, voter.name, text);
+      if (res.ok) {
+        setDraft("");
+        router.refresh();
+      }
+    });
+  };
+
+  if (!current) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed border-zinc-800 py-20 text-center">
+        <p className="sb-fight-label text-zinc-300">no contenders to review</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-sm border border-zinc-700 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-200 hover:border-rose-500/60"
+        >
+          back to roster
+        </button>
+      </div>
+    );
+  }
+
+  const datedUrl = withTripDates(current.url, tripDates);
+  const fullTitle = current.title || current.url;
+  const displayName = shortDisplayName(current.title, current.location);
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <span className="sb-fight-label text-zinc-200">
+            Review · {index + 1} of {total}
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+            ↑/↓ vote · → next · esc exit
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-sm border border-zinc-700 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-zinc-200 hover:border-rose-500/60"
+        >
+          back to roster
+        </button>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-900">
+        <div
+          className="h-full bg-gradient-to-r from-cyan-400 via-emerald-400 to-rose-500 transition-[width]"
+          style={{ width: `${((index + 1) / total) * 100}%` }}
+        />
+      </div>
+
+      <article className="sb-fighter-card mx-auto flex w-full max-w-3xl flex-col">
+        <div className="flex items-center justify-between px-4 pb-2 pt-4">
+          <a
+            href={datedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="line-clamp-1 font-bold uppercase tracking-wide text-zinc-100 hover:underline"
+            title={fullTitle}
+          >
+            {displayName}
+          </a>
+          <span
+            className={`rounded-sm border px-2 py-0.5 font-mono text-sm font-bold tabular-nums ${
+              current.score > 0
+                ? "border-emerald-400/70 text-emerald-200"
+                : current.score < 0
+                  ? "border-rose-400/70 text-rose-200"
+                  : "border-zinc-700 text-zinc-200"
+            }`}
+          >
+            {current.score > 0 ? `+${current.score}` : current.score}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 px-4">
+          {current.location && (
+            <p className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
+              {current.location}
+            </p>
+          )}
+          <AvailabilityBadge listing={current} tripDates={tripDates} battle={battle} />
+        </div>
+
+        <div className="px-3 pt-3">
+          <PhotoStrip photos={current.photos} title={current.title} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1 px-4 py-3 font-mono text-xs sm:grid-cols-4">
+          <Stat label="Bedrooms" value={current.bedrooms ?? "—"} />
+          <Stat label="Bathrooms" value={current.bathrooms ?? "—"} />
+          <Stat label="Beds" value={current.beds ?? "—"} />
+          <Stat label="Sleeps" value={current.max_guests ?? "—"} />
+          {current.rating != null && (
+            <Stat
+              label="Rating"
+              value={
+                <span className="text-amber-300">
+                  ★ {current.rating.toFixed(2)}
+                  {current.review_count != null && (
+                    <span className="ml-1 text-zinc-500">({current.review_count})</span>
+                  )}
+                </span>
+              }
+            />
+          )}
+        </div>
+
+        {/* Existing trash talk on this listing */}
+        {current.comments.length > 0 && (
+          <div className="border-t border-zinc-900 px-4 py-3">
+            <p className="sb-fight-label mb-2 text-zinc-300">
+              Trash talk so far
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {current.comments.slice(-4).map((c) => (
+                <li key={c.id} className="text-sm">
+                  <span className="mr-2 font-mono text-[10px] uppercase tracking-wider text-rose-300">
+                    {c.voter_name}
+                  </span>
+                  <span className="text-zinc-200">{c.body}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Comment input */}
+        <div className="flex gap-2 border-t border-zinc-900 px-4 py-3">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Throw a jab on the way out…"
+            maxLength={2000}
+            aria-label="Add a comment about this listing"
+            className="flex-1 rounded-sm border border-zinc-800 bg-zinc-950/60 px-2.5 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-rose-400"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                postComment();
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={postComment}
+            disabled={submitting || !draft.trim()}
+            className="rounded-sm border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs uppercase tracking-wider text-zinc-100 hover:border-rose-500 disabled:opacity-40"
+          >
+            post
+          </button>
+        </div>
+
+        {/* Vote bar */}
+        <div className="flex items-center gap-2 border-t border-zinc-900 px-4 py-4">
+          <button
+            type="button"
+            onClick={() => vote(-1)}
+            disabled={submitting}
+            aria-pressed={myVote === -1}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-sm border py-3 text-sm font-bold uppercase tracking-wider transition ${
+              myVote === -1
+                ? "border-rose-400 bg-rose-500/20 text-rose-200 shadow-lg shadow-rose-500/20"
+                : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-rose-500/50 hover:text-rose-200"
+            }`}
+          >
+            <span aria-hidden="true">▼</span> Nope
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            className="rounded-sm border border-zinc-700 bg-zinc-900 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-zinc-200 hover:border-zinc-500"
+          >
+            Skip →
+          </button>
+          <button
+            type="button"
+            onClick={() => vote(1)}
+            disabled={submitting}
+            aria-pressed={myVote === 1}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-sm border py-3 text-sm font-bold uppercase tracking-wider transition ${
+              myVote === 1
+                ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-lg shadow-emerald-500/20"
+                : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-emerald-500/50 hover:text-emerald-200"
+            }`}
+          >
+            <span aria-hidden="true">▲</span> Hell yes
+          </button>
+        </div>
+
+        {/* Navigation footer */}
+        <div className="flex items-center justify-between border-t border-zinc-900 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+          <button
+            type="button"
+            onClick={goPrev}
+            disabled={index === 0}
+            className="hover:text-zinc-100 disabled:opacity-30"
+          >
+            ← back
+          </button>
+          {index === total - 1 ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-emerald-200 hover:bg-emerald-500/20"
+            >
+              Done — see the roster
+            </button>
+          ) : (
+            <button type="button" onClick={goNext} className="hover:text-zinc-100">
+              next →
+            </button>
+          )}
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 border-t border-zinc-900 py-1">
+      <span className="text-[10px] uppercase tracking-wider text-zinc-400">
+        {label}
+      </span>
+      <span className="font-semibold text-zinc-100">{value}</span>
+    </div>
+  );
+}

@@ -1,0 +1,71 @@
+<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="StayBattle">
+  <!--
+    Icon-only version — animated house with lightning strike, no
+    wordmark. Used in the page header next to the existing h1, where
+    the full banner would duplicate the brand name. Same 8s loop
+    timing as logo-animated.svg, just stripped down.
+  -->
+  <style>
+    @keyframes sb-house-icon {
+      0%, 4%     { opacity: 0; transform: scale(0.7); }
+      10%, 88%   { opacity: 1; transform: scale(1); }
+      94%, 100%  { opacity: 0; transform: scale(0.7); }
+    }
+    @keyframes sb-lightning-icon {
+      0%, 38%    { opacity: 0;    transform: scale(0.2); }
+      41%        { opacity: 0.45; transform: scale(0.6); }
+      43%        { opacity: 1;    transform: scale(1.25); }
+      46%        { opacity: 0.7;  transform: scale(0.92); }
+      53%, 70%   { opacity: 0.95; transform: scale(1); }
+      78%        { opacity: 0.75; transform: scale(1); }
+      86%        { opacity: 0.95; transform: scale(1); }
+      94%, 100%  { opacity: 0;    transform: scale(0.2); }
+    }
+    @keyframes sb-right-shift-icon {
+      0%, 46%    { transform: translateX(0); }
+      53%, 86%   { transform: translateX(4px); }
+      94%, 100%  { transform: translateX(0); }
+    }
+    @keyframes sb-right-recolor-icon {
+      0%, 46%    { fill: #06b6d4; }
+      53%, 86%   { fill: #f43f5e; }
+      94%, 100%  { fill: #06b6d4; }
+    }
+    @keyframes sb-shake-icon {
+      0%, 42%    { transform: translateX(0); }
+      44%        { transform: translateX(-1.5px); }
+      46%        { transform: translateX(1.5px); }
+      48%, 100%  { transform: translateX(0); }
+    }
+    .sb-house-i     { opacity: 0; transform-origin: 60px 70px; animation: sb-house-icon 14s ease-in-out infinite, sb-shake-icon 14s ease-in-out infinite; }
+    .sb-right-i     { transform-origin: 60px 70px;             animation: sb-right-shift-icon 14s ease-in-out infinite, sb-right-recolor-icon 14s ease-in-out infinite; }
+    .sb-lightning-i { opacity: 0; transform-origin: 60px 30px; animation: sb-lightning-icon 14s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .sb-house-i, .sb-lightning-i { opacity: 1; transform: none; animation: none; }
+      .sb-right-i { transform: translateX(4px); animation: none; fill: #f43f5e; }
+    }
+  </style>
+
+  <g class="sb-house-i">
+    <!-- Left half (always cyan) -->
+    <path d="M 60 5 L 112 55 L 112 115 L 8 115 L 8 55 Z" fill="#06b6d4"/>
+    <rect x="30" y="70" width="22" height="22" fill="#0a0a0f" rx="1"/>
+    <rect x="33" y="73" width="6" height="6" fill="#06b6d4"/>
+    <rect x="43" y="73" width="6" height="6" fill="#06b6d4"/>
+    <rect x="33" y="83" width="6" height="6" fill="#06b6d4"/>
+    <rect x="43" y="83" width="6" height="6" fill="#06b6d4"/>
+
+    <!-- Right half (cyan → rose after the strike) -->
+    <g class="sb-right-i">
+      <path d="M 60 5 L 112 55 L 112 115 L 60 115 Z" fill="#06b6d4"/>
+      <rect x="68" y="70" width="22" height="22" fill="#0a0a0f" rx="1"/>
+    </g>
+
+    <!-- Lightning bolt -->
+    <path class="sb-lightning-i"
+          d="M 64 7 L 52 53 L 64 53 L 56 107 L 78 47 L 66 47 L 74 7 Z"
+          fill="#ffffff" stroke="#fde68a" stroke-width="1"
+          filter="drop-shadow(0 0 4px rgba(255,255,255,0.7))"/>
+  </g>
+</svg>

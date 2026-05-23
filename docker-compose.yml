@@ -1,0 +1,13 @@
+services:
+  staybattle:
+    build: .
+    image: staybattle:latest
+    container_name: staybattle
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
