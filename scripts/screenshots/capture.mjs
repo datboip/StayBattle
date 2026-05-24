@@ -165,17 +165,27 @@ async function main() {
     await ctx.close();
   }
 
-  // 7) Trophy case (only meaningful when a past battle exists — gracefully
-  //    skips if the panel isn't on the page)
+  // 7) Trophy case — capture ONLY the trophy section (not the map above it)
   {
     const { ctx, page } = await makePage(browser, { viewport: "desktop" });
     await page.goto(BASE_URL, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1200);
-    const trophy = page.locator("text=/Trophy case|past battles/i").first();
-    if (await trophy.isVisible().catch(() => false)) {
-      await trophy.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(1500);
+    // Find the <section> that contains the Trophy case heading
+    const handle = await page.evaluateHandle(() => {
+      const h = Array.from(document.querySelectorAll("h2"))
+        .find((el) => /trophy case|past battles/i.test(el.textContent || ""));
+      if (!h) return null;
+      return h.closest("section");
+    });
+    const exists = await page.evaluate((el) => !!el, handle).catch(() => false);
+    if (exists) {
+      // Scroll the section to top of viewport so element screenshot is clean
+      await handle.asElement()?.scrollIntoViewIfNeeded();
       await page.waitForTimeout(500);
-      await shoot(page, "trophy-case");
+      const out = join(OUT_DIR, "trophy-case.png");
+      await handle.asElement()?.screenshot({ path: out });
+      const { size } = await stat(out);
+      console.log(`  ✓ ${"trophy-case".padEnd(28)} ${Math.round(size / 1024)} KB`);
     } else {
       console.log("  · trophy-case skipped (no past battles)");
     }
