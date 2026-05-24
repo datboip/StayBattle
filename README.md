@@ -45,9 +45,20 @@ Pit Airbnb listings against each other. Vote, argue in the comments, settle it o
 curl -fsSL https://raw.githubusercontent.com/datboip/StayBattle/main/install.sh | sh
 ```
 
-That's it. Opens at <http://localhost:3000>. Data lives in `~/staybattle/data`.
+That's it. Opens at <http://localhost:3000> **on the machine you ran the install on**. Data lives in `~/staybattle/data`.
 
 The installer does exactly four things: check Docker is installed, pull the image, mount a data folder, run the container. Nothing else. No telemetry, no analytics, no remote callbacks.
+
+> ### Letting your crew actually click the link
+>
+> `localhost:3000` only works on the machine running the container — your crew can't click it unless you make it reachable. Pick one:
+>
+> - **Same WiFi (easiest)** — find your machine's LAN IP (`ip addr` on Linux · `ipconfig` on Windows · *System Settings → Network* on Mac), then send your crew `http://192.168.x.y:3000`. Works for trips where everyone's at the same house.
+> - **From anywhere (recommended)** — expose the port with a tunnel. No port-forwarding, no router config:
+>   - **[Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)** quick tunnel (free, no signup): `cloudflared tunnel --url http://localhost:3000` → prints a `https://random.trycloudflare.com` URL you send to the crew.
+>   - **[ngrok](https://ngrok.com)** (free tier): `ngrok http 3000` → same idea.
+>   - **[Tailscale](https://tailscale.com)** if your crew is already on your tailnet — share the machine's tailnet IP.
+>   This is how the live demo at <https://app.staybattle.com> works: Docker + a named Cloudflare Tunnel + a domain you own.
 
 <!-- TODO: drop a 10-15 second screencap GIF here once we have one. Show the
 flow: name+PIN → set up battle → drop an Airbnb URL → see the fighter card. -->

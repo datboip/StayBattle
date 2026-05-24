@@ -116,12 +116,17 @@ cat <<EOM
 
 $(done_ "StayBattle is running")
 
-  Open:       http://localhost:${PORT}
+  Open:       http://localhost:${PORT}   (this machine only)
   Data:       ${DATA_DIR}
   Logs:       docker logs -f ${CONTAINER_NAME}
   Stop:       docker stop ${CONTAINER_NAME}
   Update:     re-run this install script anytime
   Uninstall:  docker rm -f ${CONTAINER_NAME} && rm -rf ${DATA_DIR}
+
+Sharing with your crew (they can't click localhost):
+  Same WiFi:  http://<your-LAN-IP>:${PORT}   (ip addr / ipconfig)
+  Anywhere:   cloudflared tunnel --url http://localhost:${PORT}
+              (free, prints a https://*.trycloudflare.com URL)
 
 Sign in with any name + a 4–6 digit PIN to claim it, then set up your first
 battle. Share the invite code with your crew.
