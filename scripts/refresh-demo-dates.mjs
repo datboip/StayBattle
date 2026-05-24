@@ -38,6 +38,19 @@ db.prepare("update settings set value = ? where key='battle'").run(
   JSON.stringify(battle),
 );
 
+// Re-bake the cached availability against the new date pair so the
+// demo doesn't try (and fail) to call Airbnb's GraphQL after the
+// dates roll forward.
+const datesKey = `${battle.check_in}_${battle.check_out}`;
+const reBake = db.prepare(
+  `update listings set
+     availability_dates_key = ?,
+     availability_checked_at = datetime('now')
+   where availability_status is not null`,
+);
+const r = reBake.run(datesKey);
+
 console.log(
   `  battle dates: ${before.check_in} → ${before.check_out}  ⇒  ${battle.check_in} → ${battle.check_out}`,
 );
+console.log(`  refreshed dates_key on ${r.changes} listings`);

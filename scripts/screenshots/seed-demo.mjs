@@ -178,6 +178,33 @@ listings.forEach((row, i) => {
   updateListingAuthor.run(id, name, row.id);
 });
 
+// Pre-bake availability statuses so the demo never has to call Airbnb's
+// GraphQL endpoint (which is rate-limited and may be blocked from VPS).
+// Mix of available/unavailable/unknown so the badge variety shows up
+// in screenshots. dates_key matches the current trip so the app's cache
+// validator considers them fresh.
+console.log("Pre-baking availability statuses…");
+const datesKey = `${DEMO_BATTLE.check_in}_${DEMO_BATTLE.check_out}`;
+const updateAvail = db.prepare(
+  `update listings set
+     availability_status = ?,
+     availability_dates_key = ?,
+     availability_checked_at = datetime('now', '-' || ? || ' minutes'),
+     unavailability_reason = ?
+   where id = ?`,
+);
+listings.forEach((row, i) => {
+  // 70% available, 20% unavailable, 10% unknown — gives the badge variety
+  const m = i % 10;
+  if (m < 7) {
+    updateAvail.run("available", datesKey, 30 + i * 7, null, row.id);
+  } else if (m < 9) {
+    updateAvail.run("unavailable", datesKey, 30 + i * 7, "Not available for these dates", row.id);
+  } else {
+    updateAvail.run("unknown", datesKey, 30 + i * 7, null, row.id);
+  }
+});
+
 // Spread votes across listings so the ranking screenshot has variety.
 console.log("Inserting votes…");
 const insertVote = db.prepare(
