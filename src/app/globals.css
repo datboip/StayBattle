@@ -611,3 +611,38 @@ body::after {
   white-space: nowrap;
   border: 0;
 }
+
+/* ─── Review-mode card swipe animation ─────────────────────────────
+   Card slides off-right on "Oh yes!" or off-left on "No way!", then
+   the next card mounts (key changes) and the slide-in keyframes fire.
+*/
+.sb-review-card {
+  transition: transform .28s cubic-bezier(.4, 0, 1, 1),
+              opacity .28s ease;
+  animation: sb-card-in .35s cubic-bezier(.2, .7, .2, 1);
+}
+.sb-review-card.sb-swipe-right {
+  animation: none;
+  transform: translateX(120%) rotate(15deg);
+  opacity: 0;
+}
+.sb-review-card.sb-swipe-left {
+  animation: none;
+  transform: translateX(-120%) rotate(-15deg);
+  opacity: 0;
+}
+@keyframes sb-card-in {
+  from { transform: translateY(40px) scale(.96); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);   opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-review-card,
+  .sb-review-card.sb-swipe-right,
+  .sb-review-card.sb-swipe-left {
+    transition: opacity .15s ease;
+    animation: none;
+    transform: none;
+  }
+  .sb-review-card.sb-swipe-right,
+  .sb-review-card.sb-swipe-left { opacity: 0; }
+}

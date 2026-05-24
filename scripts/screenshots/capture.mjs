@@ -165,6 +165,37 @@ async function main() {
     await ctx.close();
   }
 
+  // 5b) Capture 3 review-mode frames showing different listings, for the
+  // marketing site's CSS-loop swipe animation.
+  for (const i of [1, 2, 3]) {
+    const { ctx, page } = await makePage(browser, { viewport: "desktop" });
+    await page.goto(BASE_URL, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => {
+      document.querySelector(".sb-roster")?.scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(600);
+    const opened = await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll("button"))
+        .find((b) => /review one-by-one/i.test(b.textContent || ""));
+      if (btn) { btn.click(); return true; }
+      return false;
+    });
+    if (opened) {
+      await page.waitForTimeout(1000);
+      // Advance to listing i-1 by pressing ArrowRight (i-1) times.
+      // Frame 1 = first listing, no advance; Frame 2 = +1; Frame 3 = +2
+      for (let j = 0; j < i - 1; j++) {
+        await page.keyboard.press("ArrowRight");
+        await page.waitForTimeout(700);
+      }
+      await shoot(page, `review-mode-${i}`);
+    } else {
+      console.log(`  · review-mode-${i} skipped (button not found)`);
+    }
+    await ctx.close();
+  }
+
   // 7) Trophy case — full-page clip at the trophy region with laptop-screen
   // proportions (1440x900 wide → fits laptop frame like the others)
   {

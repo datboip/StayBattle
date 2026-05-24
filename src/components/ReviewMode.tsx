@@ -32,6 +32,7 @@ export function ReviewMode({
   const [draft, setDraft] = useState("");
   const [submitting, startTransition] = useTransition();
   const [index, setIndex] = useState(0);
+  const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const stableOrderRef = useRef<ListingWithStats[]>([]);
 
   // Compute a fixed order on first render: unseen first, then seen.
@@ -129,6 +130,24 @@ export function ReviewMode({
     });
   };
 
+  // Vote + slide-off animation + auto-advance. Used by the big Oh yes! / No way!
+  // buttons. Keyboard shortcuts (ArrowUp/Down) still call vote() without advancing.
+  const voteAndNext = (target: 1 | -1) => {
+    if (!voter || !current || swipeDir) return;
+    setSwipeDir(target === 1 ? "right" : "left");
+    // Cast the vote immediately (non-blocking, animation runs in parallel)
+    const next: 1 | -1 | 0 = myVote === target ? 0 : target;
+    startTransition(async () => {
+      await castVote(current.id, voter.id, voter.name, next);
+      router.refresh();
+    });
+    // After the slide-off animation, advance to the next card
+    setTimeout(() => {
+      setSwipeDir(null);
+      if (index < total - 1) setIndex((i) => i + 1);
+    }, 280);
+  };
+
   const postComment = async () => {
     if (!voter || !current || !draft.trim()) return;
     const text = draft;
@@ -188,7 +207,10 @@ export function ReviewMode({
         />
       </div>
 
-      <article className="sb-fighter-card mx-auto flex w-full max-w-3xl flex-col">
+      <article
+        key={current.id}
+        className={`sb-fighter-card sb-review-card mx-auto flex w-full max-w-3xl flex-col${swipeDir === "left" ? " sb-swipe-left" : swipeDir === "right" ? " sb-swipe-right" : ""}`}
+      >
         <div className="flex items-center justify-between px-4 pb-2 pt-4">
           <a
             href={datedUrl}
@@ -294,8 +316,8 @@ export function ReviewMode({
         <div className="flex items-center gap-2 border-t border-zinc-900 px-4 py-4">
           <button
             type="button"
-            onClick={() => vote(-1)}
-            disabled={submitting}
+            onClick={() => voteAndNext(-1)}
+            disabled={submitting || swipeDir !== null}
             aria-pressed={myVote === -1}
             className={`flex flex-1 items-center justify-center gap-2 rounded-sm border py-3 text-sm font-bold uppercase tracking-wider transition ${
               myVote === -1
@@ -314,8 +336,8 @@ export function ReviewMode({
           </button>
           <button
             type="button"
-            onClick={() => vote(1)}
-            disabled={submitting}
+            onClick={() => voteAndNext(1)}
+            disabled={submitting || swipeDir !== null}
             aria-pressed={myVote === 1}
             className={`flex flex-1 items-center justify-center gap-2 rounded-sm border py-3 text-sm font-bold uppercase tracking-wider transition ${
               myVote === 1
