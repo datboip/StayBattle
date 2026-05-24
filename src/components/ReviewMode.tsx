@@ -303,7 +303,7 @@ export function ReviewMode({
                 : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-rose-500/50 hover:text-rose-200"
             }`}
           >
-            <span aria-hidden="true">▼</span> Nope
+            <span aria-hidden="true">▼</span> No way!
           </button>
           <button
             type="button"
@@ -323,7 +323,7 @@ export function ReviewMode({
                 : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-emerald-500/50 hover:text-emerald-200"
             }`}
           >
-            <span aria-hidden="true">▲</span> Hell yes
+            <span aria-hidden="true">▲</span> Oh yes!
           </button>
         </div>
 
