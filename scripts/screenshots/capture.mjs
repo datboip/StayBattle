@@ -43,19 +43,21 @@ async function makePage(browser, { viewport = "desktop", signedIn = true } = {})
     colorScheme: "dark",
   });
   const page = await ctx.newPage();
-  if (signedIn) {
-    // Pre-seed voter so we skip the NameGate sign-in form.
-    await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
-    await page.evaluate(({ id, name }) => {
+  // Pre-set localStorage flags BEFORE any page UI renders. This
+  // includes dismissing the demo-mode modal so it doesn't blanket
+  // every screenshot.
+  await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+  await page.evaluate(({ id, name, signedIn }) => {
+    // Dismiss the demo-mode disclaimer modal in every captured shot
+    window.localStorage.setItem("staybattle:demo-modal-dismissed:v1", "1");
+    window.localStorage.setItem("staybattle:theme:v1", "dark");
+    if (signedIn) {
       window.localStorage.setItem(
         "staybattle:auth:v2",
         JSON.stringify({ id, name }),
       );
-      // Also force dark theme in case the toggle component reads
-      // its own key independently of prefers-color-scheme.
-      window.localStorage.setItem("staybattle:theme:v1", "dark");
-    }, DEMO_VOTER);
-  }
+    }
+  }, { ...DEMO_VOTER, signedIn });
   return { ctx, page };
 }
 
@@ -120,14 +122,20 @@ async function main() {
     await ctx.close();
   }
 
-  // 5) Review-one-by-one mode
+  // 5) Review-one-by-one mode (skip gracefully if button missing)
   {
     const { ctx, page } = await makePage(browser, { viewport: "desktop" });
     await page.goto(BASE_URL, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1200);
-    await page.getByRole("button", { name: /review one-by-one/i }).click();
-    await page.waitForTimeout(900);
-    await shoot(page, "review-mode");
+    await page.waitForTimeout(1500);
+    try {
+      const btn = page.getByRole("button", { name: /review one-by-one/i }).first();
+      await btn.scrollIntoViewIfNeeded({ timeout: 5000 });
+      await btn.click({ timeout: 8000 });
+      await page.waitForTimeout(900);
+      await shoot(page, "review-mode");
+    } catch (e) {
+      console.log("  · review-mode skipped (button not found)");
+    }
     await ctx.close();
   }
 

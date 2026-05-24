@@ -27,13 +27,21 @@ const DEMO_DIR = join(ROOT, "data-demo");
 const DEMO_DB = join(DEMO_DIR, "quickie.db");
 
 // ─── Fake demo cast ───────────────────────────────────────────────
+function isoDay(date) {
+  return date.toISOString().slice(0, 10);
+}
+// Trip is always ~30 days out, lasts a week. Recompute every seed run so
+// the demo looks like an upcoming trip forever, no matter what year it is.
+const CHECK_IN = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+const CHECK_OUT = new Date(Date.now() + 37 * 24 * 3600 * 1000);
+
 const DEMO_BATTLE = {
   id: randomUUID(),
   name: "Crew Beach Week",
   organizer_name: "Alex",
   invite_code: "DEMO99",
-  check_in: "2030-08-25",
-  check_out: "2030-09-01",
+  check_in: isoDay(CHECK_IN),
+  check_out: isoDay(CHECK_OUT),
 };
 
 const DEMO_VOTERS = [

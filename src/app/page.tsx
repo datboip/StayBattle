@@ -14,10 +14,12 @@ import { SubmissionPhase } from "@/components/SubmissionPhase";
 import { InviteCodePanel } from "@/components/InviteCodePanel";
 import { JoinGateWrapper } from "@/components/JoinGateWrapper";
 import { TrophyCase } from "@/components/TrophyCase";
+import { DemoModal } from "@/components/DemoModal";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const demoMode = process.env.STAYBATTLE_DEMO_MODE === "true";
   const battle = getCurrentBattle();
   const listings = fetchAllListings();
   const places = fetchAllPlaces();
@@ -29,6 +31,7 @@ export default async function Home() {
 
   return (
     <NameGate>
+      <DemoModal enabled={demoMode} />
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
         <HeaderBar battle={battle} />
 
