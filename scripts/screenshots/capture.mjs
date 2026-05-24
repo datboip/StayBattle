@@ -182,6 +182,82 @@ async function main() {
     await ctx.close();
   }
 
+  // 8) Tinder-style review mode on MOBILE (the swipe vote, big-card form)
+  {
+    const { ctx, page } = await makePage(browser, { viewport: "mobile" });
+    await page.goto(BASE_URL, { waitUntil: "networkidle" });
+    await page.waitForTimeout(2000);
+    await page.evaluate(() => {
+      document.querySelector(".sb-roster")?.scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(800);
+    const clicked = await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll("button"));
+      const btn = btns.find((b) => /review one-by-one/i.test(b.textContent || ""));
+      if (btn) { btn.click(); return true; }
+      return false;
+    });
+    if (clicked) {
+      await page.waitForTimeout(1500);
+      await shoot(page, "review-mode-mobile");
+    } else {
+      console.log("  · review-mode-mobile skipped (button not found)");
+    }
+    await ctx.close();
+  }
+
+  // 9) Comments thread expanded on one listing — click first "trash talk · N"
+  {
+    const { ctx, page } = await makePage(browser, { viewport: "desktop" });
+    await page.goto(BASE_URL, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => {
+      document.querySelector(".sb-roster")?.scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(600);
+    const opened = await page.evaluate(() => {
+      // Match the actual button text "trash talk · N"
+      const btn = Array.from(document.querySelectorAll("button"))
+        .find((b) => /trash talk\s*·\s*\d+/i.test(b.textContent || ""));
+      if (!btn) return false;
+      btn.scrollIntoView({ block: "center" });
+      btn.click();
+      return true;
+    });
+    if (opened) {
+      await page.waitForTimeout(800);
+      // Scroll the now-expanded comments panel into view
+      await page.evaluate(() => {
+        const panel = document.querySelector('[id^="talk-"]');
+        if (panel) panel.scrollIntoView({ block: "center" });
+      });
+      await page.waitForTimeout(600);
+      await shoot(page, "comments-expanded");
+    } else {
+      console.log("  · comments-expanded skipped (trash talk button not found)");
+    }
+    await ctx.close();
+  }
+
+  // 10) Add-listing form / paste a URL state
+  {
+    const { ctx, page } = await makePage(browser, { viewport: "desktop" });
+    await page.goto(BASE_URL, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1500);
+    // Try to find the URL input — it has placeholder "Paste an Airbnb URL…"
+    const input = page.locator('input[placeholder*="Airbnb URL" i]').first();
+    if (await input.isVisible().catch(() => false)) {
+      await input.scrollIntoViewIfNeeded();
+      await input.focus();
+      await input.fill("https://www.airbnb.com/rooms/12345");
+      await page.waitForTimeout(800);
+      await shoot(page, "add-listing");
+    } else {
+      console.log("  · add-listing skipped (URL input not visible — maybe signed in as non-organizer)");
+    }
+    await ctx.close();
+  }
+
   await browser.close();
   console.log("─".repeat(60));
   console.log("Done. Commit docs/screenshots/ if happy.");

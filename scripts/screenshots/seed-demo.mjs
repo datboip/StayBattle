@@ -189,7 +189,7 @@ const updateAvail = db.prepare(
   `update listings set
      availability_status = ?,
      availability_dates_key = ?,
-     availability_checked_at = datetime('now', '-' || ? || ' minutes'),
+     availability_checked_at = datetime('now'),
      unavailability_reason = ?
    where id = ?`,
 );
@@ -197,11 +197,11 @@ listings.forEach((row, i) => {
   // 70% available, 20% unavailable, 10% unknown — gives the badge variety
   const m = i % 10;
   if (m < 7) {
-    updateAvail.run("available", datesKey, 30 + i * 7, null, row.id);
+    updateAvail.run("available", datesKey, null, row.id);
   } else if (m < 9) {
-    updateAvail.run("unavailable", datesKey, 30 + i * 7, "Not available for these dates", row.id);
+    updateAvail.run("unavailable", datesKey, "Not available for these dates", row.id);
   } else {
-    updateAvail.run("unknown", datesKey, 30 + i * 7, null, row.id);
+    updateAvail.run("unknown", datesKey, null, row.id);
   }
 });
 

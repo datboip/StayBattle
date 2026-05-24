@@ -82,6 +82,12 @@ async function drain() {
 
 /** Enqueue every listing for a fresh check against the given dates. */
 export function queueAllListings(checkIn: string, checkOut: string) {
+  // Public demo uses pre-baked availability statuses so it never has
+  // to call Airbnb (which is rate-limited and often blocked from the
+  // VPS IP). Self-hosters with STAYBATTLE_DEMO_MODE unset get the
+  // normal queue behavior.
+  if (process.env.STAYBATTLE_DEMO_MODE === "true") return;
+
   const rows = db
     .prepare("select id, url from listings")
     .all() as { id: string; url: string }[];
