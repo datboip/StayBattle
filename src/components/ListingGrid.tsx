@@ -155,7 +155,7 @@ export function ListingGrid({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo-animated.svg"
+              src="/logo.svg"
               alt=""
               className="w-full max-w-[280px] opacity-90"
             />
