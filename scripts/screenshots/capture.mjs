@@ -165,25 +165,28 @@ async function main() {
     await ctx.close();
   }
 
-  // 7) Trophy case — capture ONLY the trophy section (not the map above it)
+  // 7) Trophy case — full-page clip at the trophy region with laptop-screen
+  // proportions (1440x900 wide → fits laptop frame like the others)
   {
     const { ctx, page } = await makePage(browser, { viewport: "desktop" });
     await page.goto(BASE_URL, { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
-    // Find the <section> that contains the Trophy case heading
-    const handle = await page.evaluateHandle(() => {
+    const trophyY = await page.evaluate(() => {
       const h = Array.from(document.querySelectorAll("h2"))
         .find((el) => /trophy case|past battles/i.test(el.textContent || ""));
-      if (!h) return null;
-      return h.closest("section");
+      const section = h?.closest("section");
+      if (!section) return null;
+      const rect = section.getBoundingClientRect();
+      return Math.max(0, rect.top + window.scrollY - 80); // padding above
     });
-    const exists = await page.evaluate((el) => !!el, handle).catch(() => false);
-    if (exists) {
-      // Scroll the section to top of viewport so element screenshot is clean
-      await handle.asElement()?.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(500);
+    if (trophyY != null) {
       const out = join(OUT_DIR, "trophy-case.png");
-      await handle.asElement()?.screenshot({ path: out });
+      // fullPage: true makes `clip` page-relative instead of viewport-relative
+      await page.screenshot({
+        path: out,
+        fullPage: true,
+        clip: { x: 0, y: trophyY, width: 1440, height: 900 },
+      });
       const { size } = await stat(out);
       console.log(`  ✓ ${"trophy-case".padEnd(28)} ${Math.round(size / 1024)} KB`);
     } else {
@@ -216,7 +219,7 @@ async function main() {
     await ctx.close();
   }
 
-  // 9) Comments thread expanded on one listing — click first "trash talk · N"
+  // 9) Comments thread expanded on one listing — element-only (the card)
   {
     const { ctx, page } = await makePage(browser, { viewport: "desktop" });
     await page.goto(BASE_URL, { waitUntil: "networkidle" });
@@ -226,25 +229,31 @@ async function main() {
     });
     await page.waitForTimeout(600);
     const opened = await page.evaluate(() => {
-      // Match the actual button text "trash talk · N"
       const btn = Array.from(document.querySelectorAll("button"))
-        .find((b) => /trash talk\s*·\s*\d+/i.test(b.textContent || ""));
+        .find((b) => /trash talk\s*·\s*[1-9]\d*/i.test(b.textContent || ""));
       if (!btn) return false;
       btn.scrollIntoView({ block: "center" });
       btn.click();
       return true;
     });
     if (opened) {
-      await page.waitForTimeout(800);
-      // Scroll the now-expanded comments panel into view
-      await page.evaluate(() => {
+      await page.waitForTimeout(900);
+      const handle = await page.evaluateHandle(() => {
         const panel = document.querySelector('[id^="talk-"]');
-        if (panel) panel.scrollIntoView({ block: "center" });
+        if (!panel) return null;
+        return panel.closest("article.sb-fighter-card") ?? panel.closest("article");
       });
-      await page.waitForTimeout(600);
-      await shoot(page, "comments-expanded");
+      const exists = await page.evaluate((el) => !!el, handle).catch(() => false);
+      if (exists) {
+        await handle.asElement()?.scrollIntoViewIfNeeded();
+        await page.waitForTimeout(400);
+        const out = join(OUT_DIR, "comments-expanded.png");
+        await handle.asElement()?.screenshot({ path: out });
+        const { size } = await stat(out);
+        console.log(`  ✓ ${"comments-expanded".padEnd(28)} ${Math.round(size / 1024)} KB`);
+      }
     } else {
-      console.log("  · comments-expanded skipped (trash talk button not found)");
+      console.log("  · comments-expanded skipped (no card with comments)");
     }
     await ctx.close();
   }

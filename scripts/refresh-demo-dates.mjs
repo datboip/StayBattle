@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Update the demo battle's check-in/check-out dates to roll forward
- * relative to "today" — so the demo always shows an upcoming trip.
+ * Roll the demo battle's dates forward AND defensively re-establish
+ * availability state so the demo always looks current.
  *
- * Designed to be invoked from the nightly reset cron after the fixture
- * has been restored. Idempotent.
+ * Runs from the nightly cron after the fixture is restored. Idempotent
+ * and self-healing — if anything (app cleanup hook, queue, manual edit)
+ * has wiped availability data, this puts it back deterministically.
  *
  * Usage:
  *   STAYBATTLE_DB=/var/lib/staybattle/quickie.db node scripts/refresh-demo-dates.mjs
@@ -24,6 +25,7 @@ const checkOut = new Date(Date.now() + (DAYS_OUT + STAY_LENGTH) * 24 * 3600 * 10
 
 const db = new Database(DB_PATH);
 
+// 1. Roll battle dates forward
 const row = db.prepare("select value from settings where key='battle'").get();
 if (!row) {
   console.error("no battle in settings — is this the right DB?");
@@ -33,24 +35,51 @@ const battle = JSON.parse(row.value);
 const before = { check_in: battle.check_in, check_out: battle.check_out };
 battle.check_in = isoDay(checkIn);
 battle.check_out = isoDay(checkOut);
-
 db.prepare("update settings set value = ? where key='battle'").run(
   JSON.stringify(battle),
 );
-
-// Re-bake the cached availability against the new date pair so the
-// demo doesn't try (and fail) to call Airbnb's GraphQL after the
-// dates roll forward.
 const datesKey = `${battle.check_in}_${battle.check_out}`;
-const reBake = db.prepare(
+
+// 2. Stamp the cleanup flag so the app's one-shot wipe in db.ts NEVER runs.
+// (Without this, every fresh service boot wipes status + dates_key.)
+db.prepare(
+  "insert or replace into settings (key, value) values ('availability_reset_v1', ?)",
+).run(new Date().toISOString());
+
+// 3. Defensively re-bake availability for EVERY listing — 70/20/10 mix of
+// available/unavailable/unknown. Doesn't matter what cleared things in
+// between; after this runs, every listing has resolved status + dates_key.
+// Skip listings that have an organizer override (user-verified — leave alone).
+const listings = db.prepare(
+  "select id from listings where availability_override_status is null",
+).all();
+const setAvail = db.prepare(
   `update listings set
+     availability_status = ?,
      availability_dates_key = ?,
-     availability_checked_at = datetime('now')
-   where availability_status is not null`,
+     availability_checked_at = datetime('now'),
+     unavailability_reason = ?
+   where id = ?`,
 );
-const r = reBake.run(datesKey);
+let counts = { available: 0, unavailable: 0, unknown: 0 };
+listings.forEach((row, i) => {
+  const m = i % 10;
+  if (m < 7) {
+    setAvail.run("available", datesKey, null, row.id);
+    counts.available++;
+  } else if (m < 9) {
+    setAvail.run("unavailable", datesKey, "Not available for these dates", row.id);
+    counts.unavailable++;
+  } else {
+    setAvail.run("unknown", datesKey, null, row.id);
+    counts.unknown++;
+  }
+});
 
 console.log(
   `  battle dates: ${before.check_in} → ${before.check_out}  ⇒  ${battle.check_in} → ${battle.check_out}`,
 );
-console.log(`  refreshed dates_key on ${r.changes} listings`);
+console.log(`  cleanup flag stamped (one-shot wipe disarmed)`);
+console.log(
+  `  availability re-baked: ${counts.available} available · ${counts.unavailable} unavailable · ${counts.unknown} unknown`,
+);

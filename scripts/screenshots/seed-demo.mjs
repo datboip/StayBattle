@@ -261,42 +261,73 @@ const insertPlace = db.prepare(
 );
 refPlaces.forEach((p, i) => insertPlace.run(randomUUID(), p.name, p.lat, p.lon, p.by, 20 - i));
 
-// Plant ONE closed past battle so the trophy-case screenshot has
-// something to show.
-console.log("Inserting one past battle for trophy case…");
-const top3 = db.prepare(
-  "select id, title, image_url, url, location from listings limit 3",
+// Plant a handful of closed past battles so the trophy case looks
+// "lived in" — three trips' worth of podiums, not just one sad row.
+console.log("Inserting past battles for trophy case…");
+const allListings = db.prepare(
+  "select id, title, image_url, url, location from listings",
 ).all();
-db.prepare(
+const insertPast = db.prepare(
   `insert into past_battles
     (id, name, check_in, check_out, organizer_name, participant_names,
      podium, total_listings, total_votes, total_comments, closed_at, created_at)
-   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','-30 days'), datetime('now','-45 days'))`,
-).run(
-  randomUUID(),
-  "Lakehouse Long Weekend",
-  "2030-03-15",
-  "2030-03-21",
-  "Alex",
-  JSON.stringify(["Alex", "Sam", "Jordan", "Riley", "Casey"]),
-  JSON.stringify(
-    top3.map((l, i) => ({
-      title: l.title ?? `Cabin ${i + 1}`,
-      short_title: (l.title ?? `Cabin ${i + 1}`).slice(0, 40),
-      location: l.location,
-      image_url: l.image_url,
-      url: l.url,
-      score: 9 - i * 2,
-      upvotes: 9 - i * 2,
-      downvotes: 0,
-      added_by_name: voterEntries[i % voterEntries.length][0],
-      tier: (i + 1),
-    })),
-  ),
-  18,
-  47,
-  12,
+   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', ?), datetime('now', ?))`,
 );
+function podiumFrom(offset) {
+  // Pick 3 different listings as the podium, rotating through the catalog.
+  const three = [0, 1, 2].map((k) => allListings[(offset + k) % allListings.length]);
+  return three.map((l, i) => ({
+    title: l.title ?? `Cabin ${i + 1}`,
+    short_title: (l.title ?? `Cabin ${i + 1}`).slice(0, 40),
+    location: l.location,
+    image_url: l.image_url,
+    url: l.url,
+    score: 9 - i * 2,
+    upvotes: 9 - i * 2,
+    downvotes: 0,
+    added_by_name: voterEntries[i % voterEntries.length][0],
+    tier: i + 1,
+  }));
+}
+const pastBattles = [
+  {
+    name: "Lakehouse Long Weekend",
+    check_in: "2030-03-15", check_out: "2030-03-21",
+    organizer: "Alex",
+    participants: ["Alex", "Sam", "Jordan", "Riley", "Casey"],
+    listings: 18, votes: 47, comments: 12,
+    closed_days_ago: -30, created_days_ago: -45,
+    offset: 0,
+  },
+  {
+    name: "Cabin Crew · Spring '29",
+    check_in: "2029-05-08", check_out: "2029-05-12",
+    organizer: "Sam",
+    participants: ["Sam", "Jordan", "Casey", "Morgan"],
+    listings: 12, votes: 31, comments: 9,
+    closed_days_ago: -210, created_days_ago: -225,
+    offset: 3,
+  },
+  {
+    name: "NYE '28 House Hunt",
+    check_in: "2028-12-29", check_out: "2029-01-02",
+    organizer: "Riley",
+    participants: ["Riley", "Alex", "Drew", "Quinn", "Sam", "Casey"],
+    listings: 22, votes: 64, comments: 18,
+    closed_days_ago: -420, created_days_ago: -440,
+    offset: 6,
+  },
+];
+pastBattles.forEach((b) => {
+  insertPast.run(
+    randomUUID(),
+    b.name, b.check_in, b.check_out, b.organizer,
+    JSON.stringify(b.participants),
+    JSON.stringify(podiumFrom(b.offset)),
+    b.listings, b.votes, b.comments,
+    `${b.closed_days_ago} days`, `${b.created_days_ago} days`,
+  );
+});
 
 db.close();
 console.log("");
