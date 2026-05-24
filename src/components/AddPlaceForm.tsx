@@ -37,7 +37,7 @@ export function AddPlaceForm() {
         id={inputId}
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder='Drop a landmark: "Balboa Park", a maps link, an address…'
+        placeholder='Drop a landmark: "Lake Eola Park", a maps link, an address…'
         className="flex-1 rounded-sm border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
       />
       <button

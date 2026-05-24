@@ -208,17 +208,17 @@ listings.slice(0, DEMO_COMMENTS.length).forEach((listing, i) => {
   );
 });
 
-// Add some recognisable San Diego reference points so the map shot
+// Add some recognisable Orlando reference points so the map shot
 // shows BOTH listings (blue pins) and reference places (orange dots).
 // The real DB already had SeaWorld + Silver Lake; these supplement
 // with theme parks people instantly recognise.
 console.log("Inserting reference places…");
 const refPlaces = [
-  { name: "SeaWorld San Diego",          lat: 32.7642, lon: -117.2270, by: "Alex"   },
-  { name: "Legoland California",         lat: 33.1265, lon: -117.3094, by: "Sam"    },
-  { name: "Balboa Park",                 lat: 32.7341, lon: -117.1442, by: "Riley"  },
-  { name: "La Jolla Cove",               lat: 32.8508, lon: -117.2710, by: "Jordan" },
-  { name: "USS Midway Museum",           lat: 32.7137, lon: -117.1751, by: "Casey"  },
+  { name: "Gatorland",                   lat: 28.3766, lon: -81.3993, by: "Alex"   },
+  { name: "Lake Eola Park",              lat: 28.5436, lon: -81.3711, by: "Sam"    },
+  { name: "ICON Park",                   lat: 28.4435, lon: -81.4684, by: "Riley"  },
+  { name: "Harry P. Leu Gardens",        lat: 28.5614, lon: -81.3608, by: "Jordan" },
+  { name: "Orlando Science Center",      lat: 28.5713, lon: -81.3680, by: "Casey"  },
 ];
 const insertPlace = db.prepare(
   `insert or ignore into places (id, name, latitude, longitude, kind, added_by_name, created_at)
