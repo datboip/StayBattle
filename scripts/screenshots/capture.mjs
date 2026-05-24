@@ -122,19 +122,29 @@ async function main() {
     await ctx.close();
   }
 
-  // 5) Review-one-by-one mode (skip gracefully if button missing)
+  // 5) Review-one-by-one mode — scroll to listings, find button by text, click via DOM
   {
     const { ctx, page } = await makePage(browser, { viewport: "desktop" });
     await page.goto(BASE_URL, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
-    try {
-      const btn = page.getByRole("button", { name: /review one-by-one/i }).first();
-      await btn.scrollIntoViewIfNeeded({ timeout: 5000 });
-      await btn.click({ timeout: 8000 });
-      await page.waitForTimeout(900);
+    await page.waitForTimeout(2000);
+    // Scroll the listings into view first
+    await page.evaluate(() => {
+      document.querySelector(".sb-roster")?.scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(800);
+    // Find and click the button via DOM (locator was hitting weird timeouts)
+    const clicked = await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll("button"));
+      const btn = btns.find((b) => /review one-by-one/i.test(b.textContent || ""));
+      if (btn) { btn.click(); return true; }
+      return false;
+    });
+    if (clicked) {
+      // Wait for the review-mode overlay to render
+      await page.waitForTimeout(1500);
       await shoot(page, "review-mode");
-    } catch (e) {
-      console.log("  · review-mode skipped (button not found)");
+    } else {
+      console.log("  · review-mode skipped (button not found in DOM)");
     }
     await ctx.close();
   }
