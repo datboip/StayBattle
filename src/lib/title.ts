@@ -64,13 +64,13 @@ export function shortTitle(title: string | null): string {
   return titleCase(s).trim();
 }
 
-/** Pull just the city/locality out of a "Kissimmee, Florida, US" style string. */
+/** Pull just the city/locality out of a "San Diego, California, US" style string. */
 export function shortCity(location: string | null): string {
   if (!location) return "";
   return location.split(",")[0].trim();
 }
 
-/** "Dream Villa — Kissimmee" — the full display name we use on cards. */
+/** "Dream Villa — San Diego" — the full display name we use on cards. */
 export function shortDisplayName(
   title: string | null,
   location: string | null,

@@ -53,8 +53,8 @@ describe("shortTitle", () => {
 
 describe("shortCity", () => {
   it("takes the locality before the comma", () => {
-    expect(shortCity("Kissimmee, Florida, US")).toBe("Kissimmee");
-    expect(shortCity("Kissimmee")).toBe("Kissimmee");
+    expect(shortCity("San Diego, California, US")).toBe("San Diego");
+    expect(shortCity("San Diego")).toBe("San Diego");
   });
   it("returns empty for null", () => {
     expect(shortCity(null)).toBe("");
@@ -66,9 +66,9 @@ describe("shortDisplayName", () => {
     expect(
       shortDisplayName(
         "Dream VILLA | POOL/SPA| GAME Room|10 Min to Disney",
-        "Kissimmee, Florida",
+        "San Diego, California",
       ),
-    ).toBe("Dream Villa — Kissimmee");
+    ).toBe("Dream Villa — San Diego");
   });
 
   it("returns just the title if no location", () => {
@@ -78,7 +78,7 @@ describe("shortDisplayName", () => {
   });
 
   it("returns just the city if no title", () => {
-    expect(shortDisplayName(null, "Kissimmee, FL")).toBe("Kissimmee");
+    expect(shortDisplayName(null, "San Diego, CA")).toBe("San Diego");
   });
 
   it("falls back to 'Untitled' when both empty", () => {

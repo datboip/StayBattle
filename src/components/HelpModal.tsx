@@ -481,7 +481,7 @@ export function HelpButton({ battle }: { battle?: Battle | null }) {
                   parks, dinner spots) to give context. Pin a place by
                   typing a name (e.g.{" "}
                   <em className="text-zinc-200">&ldquo;SeaWorld
-                  Orlando&rdquo;</em>), an address, or pasting an
+                  San Diego&rdquo;</em>), an address, or pasting an
                   Apple/Google Maps share link.
                 </p>
                 <p>
