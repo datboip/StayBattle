@@ -67,14 +67,16 @@ You still book on Airbnb. StayBattle is the meeting table, not the storefront.
 
 <table>
 <tr>
-<td colspan="2"><img src="docs/screenshots/sign-in-mobile.png" alt="StayBattle sign-in screen" width="280" /></td>
+<td width="50%"><img src="docs/screenshots/voting-grid.png" alt="Voting grid with ranked listings" /></td>
+<td width="50%"><img src="docs/screenshots/battle-header.png" alt="Battle header with invite code panel" /></td>
 </tr>
 <tr>
 <td><b>The roster.</b> Every submission ranked by score, with real availability badges, prices, and a one-click path to verify on Airbnb.</td>
 <td><b>The battle.</b> Trip dates + invite code + crew list. Organizer can re-check all dates, close the battle, or start fresh.</td>
 </tr>
 <tr>
-<td colspan="2" align="center"><em>More screenshots coming with the live demo.</em></td>
+<td><img src="docs/screenshots/map.png" alt="Map of all listings + reference places" /></td>
+<td><img src="docs/screenshots/sign-in-mobile.png" alt="Mobile sign-in" width="50%" /></td>
 </tr>
 <tr>
 <td><b>The map.</b> Every candidate as a pin, plus reference places (theme parks, restaurants, the wedding venue, whatever). Real OpenStreetMap, no API keys.</td>
