@@ -28,7 +28,11 @@ const state =
   globalThis.__availability_queue ??
   (globalThis.__availability_queue = { running: false, pending: [] });
 
-const DELAY_BETWEEN_MS = 600;
+// 1.2s gap between requests — drains 24 listings in ~30s, conservative enough
+// that Airbnb won't see a burst signature. Combined with the 30-min freshness
+// cache (skip listings checked recently), repeated organizer "recheck" clicks
+// are no-ops, so spam-clicking won't accelerate the queue either.
+const DELAY_BETWEEN_MS = 1200;
 
 async function drain() {
   if (state.running) return;
@@ -80,8 +84,20 @@ async function drain() {
   }
 }
 
-/** Enqueue every listing for a fresh check against the given dates. */
-export function queueAllListings(checkIn: string, checkOut: string) {
+/**
+ * Enqueue every listing for a fresh check against the given dates.
+ *
+ * @param force  If true, ignores the 30-minute cache and re-queues every
+ *               listing even if it was just checked. Use sparingly — this
+ *               is the path that risks hitting Airbnb's rate limiter on
+ *               repeated invocation. The UI guards this behind a confirm
+ *               dialog so an organizer can't trigger it accidentally.
+ */
+export function queueAllListings(
+  checkIn: string,
+  checkOut: string,
+  force = false,
+) {
   // Public demo uses pre-baked availability statuses so it never has
   // to call Airbnb (which is rate-limited and often blocked from the
   // VPS IP). Self-hosters with STAYBATTLE_DEMO_MODE unset get the
@@ -91,6 +107,16 @@ export function queueAllListings(checkIn: string, checkOut: string) {
   const rows = db
     .prepare("select id, url from listings")
     .all() as { id: string; url: string }[];
+
+  if (force) {
+    // Bypass the cache filter — re-queue every single listing.
+    for (const r of rows) {
+      state.pending.push({ id: r.id, url: r.url, checkIn, checkOut });
+    }
+    void drain();
+    return;
+  }
+
   const key = datesKey(checkIn, checkOut);
   // Skip listings whose cached check is already against these exact dates
   // AND was checked in the last 30 minutes.

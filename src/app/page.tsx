@@ -12,6 +12,7 @@ import { BattleHeader } from "@/components/BattleHeader";
 import { FlashbangBanner } from "@/components/FlashbangBanner";
 import { SubmissionPhase } from "@/components/SubmissionPhase";
 import { InviteCodePanel } from "@/components/InviteCodePanel";
+import { AvailabilityPanel } from "@/components/AvailabilityPanel";
 import { JoinGateWrapper } from "@/components/JoinGateWrapper";
 import { TrophyCase } from "@/components/TrophyCase";
 import { DemoModal } from "@/components/DemoModal";
@@ -52,6 +53,7 @@ export default async function Home() {
               </>
             ) : (
               <>
+                <AvailabilityPanel listings={listings} battle={battle} />
                 <ListingGrid
                   listings={listings}
                   tripDates={tripDates}

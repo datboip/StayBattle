@@ -516,6 +516,7 @@ export async function clearAvailabilityOverride(
 
 export async function refreshAvailability(
   listingId?: string,
+  force = false,
 ): Promise<ActionResult> {
   const dates = getTripDates();
   if (!dates.checkIn || !dates.checkOut) {
@@ -530,7 +531,7 @@ export async function refreshAvailability(
     if (!row) return { ok: false, error: "Listing not found" };
     queueOne(row.id, row.url, dates.checkIn, dates.checkOut);
   } else {
-    queueAllListings(dates.checkIn, dates.checkOut);
+    queueAllListings(dates.checkIn, dates.checkOut, force);
   }
   revalidatePath("/");
   return { ok: true };
@@ -709,6 +710,7 @@ export async function regenerateInviteCode(
 export async function kickParticipant(
   organizerId: string,
   participantVoterId: string,
+  removeVotes = false,
 ): Promise<ActionResult> {
   const battle = getCurrentBattle();
   if (!battle) return { ok: false, error: "No active battle" };
@@ -720,7 +722,7 @@ export async function kickParticipant(
   if (target === battle.organizer_id) {
     return { ok: false, error: "Can't kick the organizer" };
   }
-  removeParticipant(battle.id, target);
+  removeParticipant(battle.id, target, removeVotes);
   revalidatePath("/");
   return { ok: true };
 }
