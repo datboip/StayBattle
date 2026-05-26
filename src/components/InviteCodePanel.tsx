@@ -146,15 +146,25 @@ export function InviteCodePanel({
   };
 
   const kick = async (vid: string, vname: string) => {
-    const ok = await confirmDialog({
+    const proceed = await confirmDialog({
       title: `Kick ${vname}?`,
       body: "They lose access to the battle right away. They can rejoin with the invite code if you don't regenerate it.",
       confirm: "Kick",
       tone: "danger",
     });
-    if (!ok) return;
+    if (!proceed) return;
+    // Second confirm: do we also wipe their votes? Kept separate so the
+    // organizer can think about it — silently removing votes when the
+    // kick was just "user left the chat" would be the wrong default.
+    const removeVotes = await confirmDialog({
+      title: `Also remove ${vname}'s votes?`,
+      body: "Their existing ratings still count toward the score unless you remove them. Remove if this person shouldn't influence the result anymore; keep if you're kicking for an unrelated reason (e.g. they joined twice).",
+      confirm: "Remove their votes",
+      cancel: "Keep votes counted",
+      tone: "danger",
+    });
     startTransition(async () => {
-      await kickParticipant(voter.id, vid);
+      await kickParticipant(voter.id, vid, removeVotes);
       router.refresh();
     });
   };

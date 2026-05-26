@@ -95,10 +95,39 @@ export function addParticipant(
   ).run(battleId, voterId, voterName);
 }
 
-export function removeParticipant(battleId: string, voterId: string): void {
-  db.prepare(
-    "delete from participants where battle_id = ? and voter_id = ?",
-  ).run(battleId, voterId);
+/**
+ * Remove a participant from the battle. By default their votes + comments
+ * are preserved — kicking should be reversible. Pass `removeVotes: true`
+ * if the organizer explicitly chose to wipe their ratings (the UI asks).
+ *
+ * Comments are never auto-deleted here — removing them would silently
+ * change a thread that other people participated in. Comment moderation
+ * stays a separate, comment-by-comment flow.
+ */
+export function removeParticipant(
+  battleId: string,
+  voterId: string,
+  removeVotes = false,
+): void {
+  // Atomic: either the participant row goes and the votes go, or neither.
+  const tx = db.transaction(() => {
+    if (removeVotes) {
+      db.prepare("delete from votes where voter_id = ?").run(voterId);
+    }
+    db.prepare(
+      "delete from participants where battle_id = ? and voter_id = ?",
+    ).run(battleId, voterId);
+  });
+  tx();
+}
+
+/** How many votes a single voter currently has across the whole DB. Used
+ *  by the kick confirmation flow to decide whether to ask about removal. */
+export function countVotesByVoter(voterId: string): number {
+  const row = db
+    .prepare("select count(*) as n from votes where voter_id = ?")
+    .get(voterId) as { n: number } | undefined;
+  return row?.n ?? 0;
 }
 
 export function isParticipant(battleId: string, voterId: string): boolean {
