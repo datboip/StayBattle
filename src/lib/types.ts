@@ -37,11 +37,13 @@ export type Listing = {
   unavailability_reason: string | null;
 };
 
+export type VoteValue = 1 | 2 | 3 | 4 | 5;
+
 export type Vote = {
   listing_id: string;
   voter_id: string;
   voter_name: string;
-  value: 1 | -1;
+  value: VoteValue;
   created_at: string;
 };
 
@@ -58,9 +60,10 @@ export type Comment = {
 export type ListingWithStats = Listing & {
   votes: Vote[];
   comments: Comment[];
-  score: number;
-  upvotes: number;
-  downvotes: number;
+  /** Mean of all vote values (1.0–5.0). Null when no one has voted yet. */
+  score: number | null;
+  /** How many distinct voters rated this listing. */
+  vote_count: number;
 };
 
 export type Voter = {
@@ -76,9 +79,9 @@ export type PodiumEntry = {
   location: string | null;
   image_url: string | null;
   url: string;
+  /** Mean rating (1.0–5.0). Podium entries always have at least one vote. */
   score: number;
-  upvotes: number;
-  downvotes: number;
+  vote_count: number;
   added_by_name: string | null;
   /** 1 = gold, 2 = silver, 3 = bronze. Multiple entries can share the same tier when their scores tie. */
   tier: 1 | 2 | 3;

@@ -70,8 +70,8 @@ export function archiveCurrentBattle(battle: {
   const listings = db
     .prepare(
       `select l.id, l.title, l.location, l.image_url, l.url, l.added_by_name,
-              coalesce(sum(case when v.value = 1 then 1 else 0 end), 0) as upvotes,
-              coalesce(sum(case when v.value = -1 then 1 else 0 end), 0) as downvotes
+              coalesce(avg(v.value), 0) as score,
+              coalesce(count(v.value), 0) as vote_count
          from listings l
          left join votes v on v.listing_id = l.id
         where coalesce(l.availability_status, 'unknown') != 'unavailable'
@@ -85,24 +85,19 @@ export function archiveCurrentBattle(battle: {
     image_url: string | null;
     url: string;
     added_by_name: string | null;
-    upvotes: number;
-    downvotes: number;
+    score: number;
+    vote_count: number;
   }>;
 
+  // Only include listings with at least one vote on the podium — a 0-vote
+  // listing has no mean to rank by. Primary sort: mean rating desc.
+  // Tiebreaker: more raters wins (we trust a 4.5 from 8 people over a 4.5
+  // from 1). Final tiebreaker: alphabetical for determinism.
   const ranked = listings
-    .map((l) => ({
-      ...l,
-      score: l.upvotes - l.downvotes,
-    }))
-    // Primary: net score desc. Tiebreaker: total engagement (upvotes+downvotes)
-    // desc — listings nobody bothered to weigh in on shouldn't outrank ones
-    // that everyone voted on, when net score is otherwise equal. Final
-    // tiebreaker: stable alphabetical by title so the snapshot is deterministic.
+    .filter((l) => l.vote_count > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      const aE = a.upvotes + a.downvotes;
-      const bE = b.upvotes + b.downvotes;
-      if (bE !== aE) return bE - aE;
+      if (b.vote_count !== a.vote_count) return b.vote_count - a.vote_count;
       return (a.title ?? "").localeCompare(b.title ?? "");
     });
 
@@ -129,8 +124,7 @@ export function archiveCurrentBattle(battle: {
       image_url: l.image_url,
       url: l.url,
       score: l.score,
-      upvotes: l.upvotes,
-      downvotes: l.downvotes,
+      vote_count: l.vote_count,
       added_by_name: l.added_by_name,
       tier: currentTier,
     });

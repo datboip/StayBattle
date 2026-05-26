@@ -47,7 +47,7 @@ const SCHEMA_STATEMENTS = [
     listing_id text not null references listings(id) on delete cascade,
     voter_id text not null,
     voter_name text not null,
-    value integer not null check (value in (-1, 1)),
+    value integer not null check (value between 1 and 5),
     created_at text not null default (datetime('now')),
     primary key (listing_id, voter_id)
   )`,
@@ -162,6 +162,44 @@ function ensureSchema(handle: Database.Database) {
     if (!existingComment.has(column)) {
       handle.prepare(`alter table comments add column ${column} ${type}`).run();
     }
+  }
+
+  // Migration (2026-05): votes table moved from ±1 thumb to 1-5 scale.
+  // SQLite can't ALTER a CHECK constraint in place, so we re-create the table.
+  // Old +1 votes → 5 (love), old -1 votes → 1 (nope). Approximates the
+  // submitter's original sentiment in the new range. One-shot per DB.
+  const votesSchema = handle
+    .prepare("select sql from sqlite_master where type='table' and name='votes'")
+    .get() as { sql: string } | undefined;
+  if (votesSchema && votesSchema.sql.includes("value in (-1, 1)")) {
+    handle.transaction(() => {
+      handle
+        .prepare(
+          `create table votes_new (
+             listing_id text not null references listings(id) on delete cascade,
+             voter_id text not null,
+             voter_name text not null,
+             value integer not null check (value between 1 and 5),
+             created_at text not null default (datetime('now')),
+             primary key (listing_id, voter_id)
+           )`,
+        )
+        .run();
+      handle
+        .prepare(
+          `insert into votes_new (listing_id, voter_id, voter_name, value, created_at)
+           select listing_id, voter_id, voter_name,
+                  case when value = 1 then 5 else 1 end,
+                  created_at
+             from votes`,
+        )
+        .run();
+      handle.prepare("drop table votes").run();
+      handle.prepare("alter table votes_new rename to votes").run();
+      handle
+        .prepare("create index if not exists votes_listing_idx on votes(listing_id)")
+        .run();
+    })();
   }
 
   // One-time data cleanup (2030-08-02): the old availability auto-check

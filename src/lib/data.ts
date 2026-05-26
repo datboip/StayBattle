@@ -38,8 +38,12 @@ export function fetchAllListings(): ListingWithStats[] {
 
   return listings.map((row) => {
     const vs = votesByListing.get(row.id) ?? [];
-    const upvotes = vs.filter((v) => v.value === 1).length;
-    const downvotes = vs.filter((v) => v.value === -1).length;
+    const vote_count = vs.length;
+    // Mean of 1–5 ratings. `null` when no one has voted so the UI can show
+    // "not yet rated" instead of an arbitrary "0" that misranks listings.
+    const score = vote_count > 0
+      ? vs.reduce((sum, v) => sum + v.value, 0) / vote_count
+      : null;
     let photos: string[] = [];
     try {
       photos = JSON.parse(row.photos);
@@ -58,9 +62,8 @@ export function fetchAllListings(): ListingWithStats[] {
       amenities,
       votes: vs,
       comments: commentsByListing.get(row.id) ?? [],
-      upvotes,
-      downvotes,
-      score: upvotes - downvotes,
+      vote_count,
+      score,
     } satisfies ListingWithStats;
   });
 }

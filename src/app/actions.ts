@@ -176,16 +176,21 @@ export async function addListing(
   return { ok: true };
 }
 
+/**
+ * Cast a 1–5 star rating on a listing. Passing `value = 0` deletes the
+ * voter's existing rating (used by the UI when a voter "unselects" their
+ * choice). Re-rating overwrites the previous value.
+ */
 export async function castVote(
   listingId: string,
   voterId: string,
   voterName: string,
-  value: 1 | -1 | 0,
+  value: 0 | 1 | 2 | 3 | 4 | 5,
 ): Promise<ActionResult> {
   const id = cleanString(listingId, 64);
   const vid = cleanString(voterId, VOTER_ID_MAX);
   if (!id || !vid) return { ok: false, error: "Missing id" };
-  if (value !== 1 && value !== -1 && value !== 0) {
+  if (!Number.isInteger(value) || value < 0 || value > 5) {
     return { ok: false, error: "Invalid vote" };
   }
   if (!consume(`vote:${vid}`, LIMITS.vote)) return RATE_LIMITED;

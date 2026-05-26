@@ -41,9 +41,8 @@ function listing(
     unavailability_reason: null,
     votes: [],
     comments: [],
-    upvotes: 0,
-    downvotes: 0,
-    score: 0,
+    vote_count: 0,
+    score: null,
     ...partial,
   };
 }
@@ -61,40 +60,32 @@ describe("rankListings", () => {
   });
 
   it('"votes" sorts by total votes desc', () => {
-    const sparse = listing("sparse", { upvotes: 1, downvotes: 0, score: 1 });
-    const popular = listing("popular", { upvotes: 5, downvotes: 3, score: 2 });
+    const sparse = listing("sparse", { vote_count: 1, score: 4 });
+    const popular = listing("popular", { vote_count: 8, score: 3 });
     expect(rankListings([sparse, popular], "votes").map((l) => l.id)).toEqual([
       "popular",
       "sparse",
     ]);
   });
 
-  it('"score" prefers higher score', () => {
-    const a = listing("a", { score: 1 });
-    const b = listing("b", { score: 5 });
+  it('"score" prefers higher mean rating', () => {
+    const a = listing("a", { score: 2.5, vote_count: 3 });
+    const b = listing("b", { score: 4.5, vote_count: 3 });
     expect(rankListings([a, b], "score").map((l) => l.id)).toEqual(["b", "a"]);
   });
 
-  it('"score" gives a brief recency boost to brand-new listings', () => {
-    // An old listing with score 1 should rank below a 0-score listing
-    // created in the last few minutes, because the recency boost > 1.
-    const dayOld = listing("old", {
-      score: 1,
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    });
-    const fresh = listing("fresh", {
-      score: 0,
-      created_at: new Date().toISOString(),
-    });
-    expect(rankListings([dayOld, fresh], "score").map((l) => l.id)).toEqual([
-      "fresh",
-      "old",
+  it('"score" ranks unrated listings below rated ones', () => {
+    const rated = listing("rated", { score: 1.5, vote_count: 2 });
+    const unrated = listing("unrated", { score: null, vote_count: 0 });
+    expect(rankListings([rated, unrated], "score").map((l) => l.id)).toEqual([
+      "rated",
+      "unrated",
     ]);
   });
 
   it("returns a new array (does not mutate input)", () => {
-    const a = listing("a", { score: 1 });
-    const b = listing("b", { score: 2 });
+    const a = listing("a", { score: 2.5 });
+    const b = listing("b", { score: 4 });
     const input = [a, b];
     const sorted = rankListings(input, "score" as SortMode);
     expect(input).toEqual([a, b]);
