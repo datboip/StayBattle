@@ -3,8 +3,12 @@
 @theme inline {
   --color-background: #07070b;
   --color-foreground: #fafafa;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Brand palette — canonical per docs/brand/README.md (Section 06 · Color). */
+  --color-brand-teal: #10C8D2;
+  --color-brand-rose: #FF6C51;
+  --color-brand-amber: #fbbf24;
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
 html {
@@ -54,7 +58,7 @@ html,
 body {
   background: #07070b;
   color: #fafafa;
-  font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  font-family: var(--font-plex-sans), Inter, system-ui, sans-serif;
 }
 
 /* While `theme-transitioning` is on the <html> element, gently animate the
@@ -302,9 +306,10 @@ html[data-theme="light"] input:-webkit-autofill:focus {
   caret-color: #18181b;
 }
 
-/* Global focus indicator — single source of truth, visible on dark bg. */
+/* Global focus indicator — single source of truth, visible on dark bg.
+   Uses brand rose so focused elements share the brand's accent color. */
 :focus-visible {
-  outline: 2px solid #f43f5e;
+  outline: 2px solid #FF6C51;
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -509,16 +514,17 @@ body::after {
   mix-blend-mode: overlay;
 }
 
-/* Brand gradient — used on the wordmark + accents. */
+/* Brand gradient — used on the wordmark + accents.
+   Two-stop teal→rose per the brand book (Section 06 · Color). */
 .sb-gradient-text {
-  background: linear-gradient(90deg, #22d3ee 0%, #34d399 35%, #fb7185 70%, #f97316 100%);
+  background: linear-gradient(90deg, #10C8D2 0%, #FF6C51 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .sb-fight-label {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-size: 0.7rem;
@@ -569,7 +575,7 @@ body::after {
   align-items: baseline;
   padding: 0.35rem 0.6rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
 }
@@ -646,3 +652,69 @@ body::after {
   .sb-review-card.sb-swipe-right,
   .sb-review-card.sb-swipe-left { opacity: 0; }
 }
+
+/* ============================================================
+   Brand components — ported verbatim from public/brand/index.html
+   chapter 09 (Components). The brand book claims "the styles
+   already exist in the cascade" — this block makes that true.
+
+   .statline .n diverges from the brand book: the book references
+   var(--display) which would resolve to Black Ops One, but the
+   book's own typography rule says Black Ops One is "marks only,
+   never live text". Using IBM Plex Sans 900 here resolves that
+   internal contradiction without sacrificing the visual weight.
+   ============================================================ */
+
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .85rem 1.5rem;
+  border-radius: 4px;
+  font: 600 .9rem/1 var(--font-plex-sans), Inter, system-ui, sans-serif;
+  letter-spacing: .02em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.btn.primary   { background: #10C8D2; color: #052a31; border-color: #10C8D2; }
+.btn.primary:hover   { background: #0eafb8; transform: translateY(-1px); box-shadow: 0 8px 24px -8px rgba(16,200,210,.6); }
+.btn.secondary { color: #FF6C51; border-color: rgba(255,108,81,.5); background: transparent; }
+.btn.secondary:hover { background: rgba(255,108,81,.12); border-color: #FF6C51; }
+.btn.ghost     { color: #71717a; border-color: rgba(255,255,255,0.08); background: #131318; }
+.btn.ghost:hover     { color: #fafafa; border-color: #fafafa; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font: 600 10px/1 var(--font-plex-mono), ui-monospace, monospace;
+  letter-spacing: .25em; text-transform: uppercase;
+  padding: .35rem .6rem;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+}
+.badge.rose  { color: #FF6C51; background: rgba(255,108,81,.08); }
+.badge.teal  { color: #10C8D2; background: rgba(16,200,210,.08); }
+.badge.amber { color: #fbbf24; background: rgba(251,191,36,.08); }
+.badge.live::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 6px currentColor;
+  animation: sb-badge-pulse 4s ease-in-out infinite;
+}
+@keyframes sb-badge-pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+.url-bar {
+  background: #0a0a0f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: .65rem 1rem;
+  font: 500 12px/1 var(--font-plex-mono), ui-monospace, monospace;
+  color: #10C8D2;
+  display: inline-flex; align-items: center; gap: .6rem;
+  box-shadow: inset 0 0 0 1px rgba(16,200,210,.15);
+}
+.url-bar::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: #10C8D2; box-shadow: 0 0 8px #10C8D2;
+}
+
+.statline { display: flex; gap: 1.75rem; align-items: baseline; }
+.statline .n { font: 900 2.5rem/.9 var(--font-plex-sans), Inter, system-ui, sans-serif; color: #fafafa; letter-spacing: -.02em; }
+.statline .l { font: 500 10px/1.2 var(--font-plex-mono), ui-monospace, monospace; letter-spacing: .25em; text-transform: uppercase; color: #71717a; max-width: 10ch; }
