@@ -177,22 +177,26 @@ function extractPhotos(
 
   if (set.size === 0 && ogImage) set.add(ogImage);
 
-  // Last resort: scan <img> tags pointing at the Airbnb image CDN.
-  if (set.size < 4) {
-    $("img").each((_, el) => {
-      const src = $(el).attr("src") || $(el).attr("data-src") || "";
-      if (
-        src.includes("muscache.com") &&
-        !src.includes("profile_pic") &&
-        !src.includes("/avatars/") &&
-        !src.includes("/users/")
-      ) {
-        set.add(src);
-      }
-    });
-  }
+  // Top up from <img> tags pointing at the Airbnb image CDN. Used to gate
+  // this behind "if size < 4" — but JSON-LD typically only ships 8 photos,
+  // and a 6-bedroom listing can't be summarized in 8 shots. Always scanning
+  // pulls in additional carousel images that aren't in JSON-LD.
+  $("img").each((_, el) => {
+    const src = $(el).attr("src") || $(el).attr("data-src") || "";
+    if (
+      src.includes("muscache.com") &&
+      !src.includes("profile_pic") &&
+      !src.includes("/avatars/") &&
+      !src.includes("/users/")
+    ) {
+      set.add(src);
+    }
+  });
 
-  return Array.from(set).slice(0, 12);
+  // Cap at 24 — enough to cover most 4-6 bedroom listings; beyond that the
+  // carousel UI starts to be the limiting factor anyway. The deferred-state
+  // JSON in the page has more, mining that is a TODO.
+  return Array.from(set).slice(0, 24);
 }
 
 function extractLocation(rental: JsonLdNode | null): string | null {
