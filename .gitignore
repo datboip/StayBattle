@@ -70,3 +70,8 @@ docs/screenshots/local-*.png
 docs/screenshots/private-*.png
 /data-demo
 /.private-notes-*.md
+
+# brand / design audit artifacts — local-only, never push
+/.brand-audit-backup-*/
+/public/audit/
+*.backup
