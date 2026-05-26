@@ -5,16 +5,35 @@ import { useRouter } from "next/navigation";
 import { castVote, addComment } from "@/app/actions";
 import { useVoter } from "@/lib/voter";
 import { withTripDates, type TripDates } from "@/lib/trip";
-import type { ListingWithStats } from "@/lib/types";
+import type { ListingWithStats, VoteValue } from "@/lib/types";
 import { PhotoStrip } from "./PhotoStrip";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { shortDisplayName } from "@/lib/title";
 import type { Battle } from "@/lib/battle";
 
+// Pattern C labelled vote buttons. Values 1-5, color spectrum from
+// rose (Nope) through neutral gray (OK) to teal (Love). Mirrors the
+// .sb-gradient-text spectrum and the brand book's two-stop palette.
+const VOTE_OPTIONS: Array<{ value: VoteValue; label: string }> = [
+  { value: 1, label: "Nope" },
+  { value: 2, label: "Meh" },
+  { value: 3, label: "OK" },
+  { value: 4, label: "Like" },
+  { value: 5, label: "Love" },
+];
+
+const VOTE_BUTTON_SELECTED: Record<VoteValue, string> = {
+  1: "border-[#FF6C51] bg-[#FF6C51] text-[#2a0808] shadow-lg shadow-[#FF6C51]/30",
+  2: "border-[#b85240] bg-[#b85240] text-white shadow-lg shadow-[#b85240]/30",
+  3: "border-zinc-500 bg-zinc-500 text-zinc-50 shadow-lg shadow-zinc-500/30",
+  4: "border-[#0a8a92] bg-[#0a8a92] text-white shadow-lg shadow-[#0a8a92]/30",
+  5: "border-[#10C8D2] bg-[#10C8D2] text-[#052a31] shadow-lg shadow-[#10C8D2]/30",
+};
+
 /**
- * One-at-a-time review of every listing. Swipe-through review: see big card → leave a
- * comment if you want → vote up/down/skip → next. Unvoted-by-you first, then
- * the rest, so a returning user lands on something new.
+ * One-at-a-time review of every listing. Swipe-through review: see big card →
+ * leave a comment if you want → rate 1-5 / skip → next. Unvoted-by-you first,
+ * then the rest, so a returning user lands on something new.
  */
 export function ReviewMode({
   listings,
@@ -89,12 +108,18 @@ export function ReviewMode({
       // Don't hijack typing keys when the comment box is focused.
       if (inField) return;
 
-      if (e.key === "ArrowUp" || e.key === "u" || e.key === "U") {
+      // Number keys 1-5 cast that rating directly. ArrowUp / ArrowDown
+      // keep working as shortcuts for 5 (Love) / 1 (Nope) so muscle memory
+      // from the old thumb-up/down UI doesn't have to relearn.
+      if (e.key >= "1" && e.key <= "5") {
         e.preventDefault();
-        vote(1);
+        vote(Number(e.key) as VoteValue);
+      } else if (e.key === "ArrowUp" || e.key === "u" || e.key === "U") {
+        e.preventDefault();
+        vote(5);
       } else if (e.key === "ArrowDown" || e.key === "d" || e.key === "D") {
         e.preventDefault();
-        vote(-1);
+        vote(1);
       } else if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
         goNext();
@@ -121,27 +146,31 @@ export function ReviewMode({
     setIndex((i) => i - 1);
   };
 
-  const vote = (target: 1 | -1) => {
+  const vote = (target: VoteValue) => {
     if (!voter || !current) return;
-    const next: 1 | -1 | 0 = myVote === target ? 0 : target;
+    const next: 0 | VoteValue = myVote === target ? 0 : target;
     startTransition(async () => {
       await castVote(current.id, voter.id, voter.name, next);
       router.refresh();
     });
   };
 
-  // Vote + slide-off animation + auto-advance. Used by the big Oh yes! / No way!
-  // buttons. Keyboard shortcuts (ArrowUp/Down) still call vote() without advancing.
-  const voteAndNext = (target: 1 | -1) => {
+  // Vote + slide-off animation + auto-advance. Used by the big labelled
+  // buttons. Keyboard shortcuts (1-5, ArrowUp/Down) call vote() without
+  // advancing — handy for correcting yourself before moving on.
+  //
+  // Slide direction follows sentiment: 1-2 swipe left (rejection), 3 stays
+  // centered, 4-5 swipe right (endorsement). A middle "3" still advances
+  // but without the swipe; feels appropriate for a neutral verdict.
+  const voteAndNext = (target: VoteValue) => {
     if (!voter || !current || swipeDir) return;
-    setSwipeDir(target === 1 ? "right" : "left");
-    // Cast the vote immediately (non-blocking, animation runs in parallel)
-    const next: 1 | -1 | 0 = myVote === target ? 0 : target;
+    const dir = target >= 4 ? "right" : target <= 2 ? "left" : null;
+    if (dir) setSwipeDir(dir);
+    const next: 0 | VoteValue = myVote === target ? 0 : target;
     startTransition(async () => {
       await castVote(current.id, voter.id, voter.name, next);
       router.refresh();
     });
-    // After the slide-off animation, advance to the next card
     setTimeout(() => {
       setSwipeDir(null);
       if (index < total - 1) setIndex((i) => i + 1);
@@ -223,14 +252,17 @@ export function ReviewMode({
           </a>
           <span
             className={`rounded-sm border px-2 py-0.5 font-mono text-sm font-bold tabular-nums ${
-              current.score > 0
-                ? "border-emerald-400/70 text-emerald-200"
-                : current.score < 0
-                  ? "border-rose-400/70 text-rose-200"
-                  : "border-zinc-700 text-zinc-200"
+              current.score == null
+                ? "border-zinc-700 text-zinc-500"
+                : current.score >= 4
+                  ? "border-[#10C8D2]/70 text-[#10C8D2]"
+                  : current.score >= 3
+                    ? "border-zinc-600 text-zinc-200"
+                    : "border-[#FF6C51]/70 text-[#FF6C51]"
             }`}
+            title={current.score == null ? "No ratings yet" : `Mean of ${current.vote_count} rating${current.vote_count === 1 ? "" : "s"}`}
           >
-            {current.score > 0 ? `+${current.score}` : current.score}
+            {current.score == null ? "—" : `${current.score.toFixed(1)} / 5`}
           </span>
         </div>
 
@@ -312,41 +344,42 @@ export function ReviewMode({
           </button>
         </div>
 
-        {/* Vote bar */}
-        <div className="flex items-center gap-2 border-t border-zinc-900 px-4 py-4">
-          <button
-            type="button"
-            onClick={() => voteAndNext(-1)}
-            disabled={submitting || swipeDir !== null}
-            aria-pressed={myVote === -1}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-sm border py-3 text-sm font-bold uppercase tracking-wider transition ${
-              myVote === -1
-                ? "border-rose-400 bg-rose-500/20 text-rose-200 shadow-lg shadow-rose-500/20"
-                : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-rose-500/50 hover:text-rose-200"
-            }`}
-          >
-            <span aria-hidden="true">▼</span> No way!
-          </button>
-          <button
-            type="button"
-            onClick={goNext}
-            className="rounded-sm border border-zinc-700 bg-zinc-900 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-zinc-200 hover:border-zinc-500"
-          >
-            Skip →
-          </button>
-          <button
-            type="button"
-            onClick={() => voteAndNext(1)}
-            disabled={submitting || swipeDir !== null}
-            aria-pressed={myVote === 1}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-sm border py-3 text-sm font-bold uppercase tracking-wider transition ${
-              myVote === 1
-                ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-lg shadow-emerald-500/20"
-                : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-emerald-500/50 hover:text-emerald-200"
-            }`}
-          >
-            <span aria-hidden="true">▲</span> Oh yes!
-          </button>
+        {/* Vote bar — Pattern C labelled buttons (Nope / Meh / OK / Like / Love).
+            Tap a button to rate + auto-advance. Skip on the right preserves
+            the old "go to next without voting" affordance. */}
+        <div className="border-t border-zinc-900 px-4 py-4">
+          <div className="mb-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+            <span>What's the verdict?</span>
+            <button
+              type="button"
+              onClick={goNext}
+              className="rounded-sm border border-zinc-700 bg-zinc-900 px-3 py-1 text-zinc-200 hover:border-zinc-500"
+            >
+              Skip →
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {VOTE_OPTIONS.map(({ value, label }) => {
+              const selected = myVote === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => voteAndNext(value)}
+                  disabled={submitting || swipeDir !== null}
+                  aria-pressed={selected}
+                  aria-label={`Rate ${value} out of 5: ${label}`}
+                  className={`flex flex-1 items-center justify-center rounded-sm border py-3 font-mono text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 ${
+                    selected
+                      ? VOTE_BUTTON_SELECTED[value]
+                      : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-zinc-500 hover:text-zinc-50"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Navigation footer */}

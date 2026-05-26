@@ -39,12 +39,17 @@ export function ListingCard({
   const [openTalk, setOpenTalk] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
+  // Color the score chip along the brand spectrum. Score is now a 1–5 mean
+  // (or null when no one has voted yet). 4.0+ is teal-positive, ≤2.0 is
+  // rose-negative, in-between is neutral. Null shows a muted dash.
   const scoreClass =
-    listing.score > 0
-      ? "text-emerald-200 border-emerald-400/70 shadow-[0_0_20px_-5px_rgba(52,211,153,0.6)]"
-      : listing.score < 0
-        ? "text-rose-200 border-rose-400/70 shadow-[0_0_20px_-5px_rgba(244,63,94,0.6)]"
-        : "text-zinc-200 border-zinc-700";
+    listing.score == null
+      ? "text-zinc-500 border-zinc-700"
+      : listing.score >= 4
+        ? "text-[#10C8D2] border-[#10C8D2]/70 shadow-[0_0_20px_-5px_rgba(16,200,210,0.6)]"
+        : listing.score <= 2
+          ? "text-[#FF6C51] border-[#FF6C51]/70 shadow-[0_0_20px_-5px_rgba(255,108,81,0.6)]"
+          : "text-zinc-200 border-zinc-700";
 
   const fullTitle = listing.title || listing.url;
   const displayName = shortDisplayName(listing.title, listing.location);
@@ -75,10 +80,11 @@ export function ListingCard({
           {String(rank).padStart(2, "0")}
         </span>
         <span
-          aria-label={`Score: ${listing.score}`}
+          aria-label={listing.score == null ? "No ratings yet" : `Mean rating: ${listing.score.toFixed(1)} of 5`}
           className={`rounded-sm border px-2 py-0.5 font-mono text-sm font-bold tabular-nums ${scoreClass}`}
+          title={listing.score == null ? "Not yet rated" : `Mean of ${listing.vote_count} rating${listing.vote_count === 1 ? "" : "s"}`}
         >
-          {listing.score > 0 ? `+${listing.score}` : listing.score}
+          {listing.score == null ? "—" : listing.score.toFixed(1)}
         </span>
       </div>
 

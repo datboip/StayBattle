@@ -153,14 +153,16 @@ export default function MapView({
                   Score:{" "}
                   <span
                     className={
-                      l.score > 0
-                        ? "text-emerald-400"
-                        : l.score < 0
-                          ? "text-rose-400"
-                          : "text-neutral-300"
+                      l.score == null
+                        ? "text-neutral-400"
+                        : l.score >= 4
+                          ? "text-[#10C8D2]"
+                          : l.score <= 2
+                            ? "text-[#FF6C51]"
+                            : "text-neutral-300"
                     }
                   >
-                    {l.score > 0 ? `+${l.score}` : l.score}
+                    {l.score == null ? "—" : `${l.score.toFixed(1)} / 5`}
                   </span>
                   {l.rating != null && (
                     <>
