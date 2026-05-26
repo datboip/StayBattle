@@ -29,7 +29,7 @@ const PlaceIcon = L.divIcon({
   className: "",
   html: `<div style="
     width: 18px; height: 18px; border-radius: 50%;
-    background: #f59e0b; border: 2px solid white;
+    background: #fbbf24; border: 2px solid white;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
   "></div>`,
   iconSize: [18, 18],

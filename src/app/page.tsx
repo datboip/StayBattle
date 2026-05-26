@@ -70,8 +70,9 @@ export default async function Home() {
 
         <footer className="mt-auto flex flex-col items-center gap-2 pt-8 text-center text-xs text-zinc-400">
           <p>
-            <span className="sb-gradient-text font-semibold">StayBattle</span>{" "}
-            · settle the vacation argument
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-banner.svg" alt="StayBattle" className="inline-block h-4 w-auto align-middle" />
+            {" "}· settle the vacation argument
           </p>
           <div className="mx-auto max-w-2xl rounded-sm border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-amber-200/90">
             <p className="mb-1 font-mono text-[9px] uppercase tracking-wider text-amber-300/80">
@@ -89,7 +90,7 @@ export default async function Home() {
             </p>
           </div>
           <p className="text-[10px] leading-relaxed text-zinc-500">
-            Unaffiliated with Airbnb, Inc. · Self-hosted, provided AS IS{" "}
+            Unaffiliated with any listing service shown. · Self-hosted, provided AS IS{" "}
             with NO WARRANTY of any kind, express or implied. Use at your
             own risk. Have fun. · Open source under{" "}
             <a

@@ -37,20 +37,16 @@ export function HeaderBar({ battle }: { battle?: Battle | null }) {
       <h1 className="m-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo-banner.png"
+          src="/logo-banner.svg"
           alt="StayBattle — settle the vacation argument"
-          className="h-20 w-auto sm:h-28 md:h-32"
+          className="h-20 w-auto max-w-full object-contain sm:h-28 md:h-32"
         />
       </h1>
 
-      {/* Second row: disclaimer (left) shares the line with the
-          controls (right) so they read as one bar instead of two
-          stacks. Matches the pre-banner layout's visual rhythm. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[9px] uppercase tracking-wider text-zinc-600">
-          Unaffiliated with Airbnb, Inc.
-        </p>
-
+      {/* Second row: controls. Disclaimer lives in the footer + help
+          modal only — top-of-page disclaimer awkwardly emphasizes the
+          third-party brands we're disclaiming, so keep it small print. */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="ml-auto flex items-center gap-2">
           <HelpButton battle={battle} />
           <ThemeToggle />

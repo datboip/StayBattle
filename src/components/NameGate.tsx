@@ -47,21 +47,12 @@ export function NameGate({ children }: { children: React.ReactNode }) {
             onSubmit={submit}
             className="relative flex flex-col gap-5 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-7 shadow-[0_30px_80px_-30px_rgba(251,113,133,0.4)] backdrop-blur"
           >
-            <div className="flex items-center gap-3">
+            <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.svg" alt="" width={40} height={40} />
-              <div>
-                <p className="text-2xl font-bold tracking-tight">
-                  <span className="sb-gradient-text">Stay</span>
-                  <span>Battle</span>
-                </p>
-                <p className="text-xs text-zinc-400">
-                  Sign in to vote on the trip.
-                </p>
-                <p className="mt-0.5 text-[9px] uppercase tracking-wider text-zinc-600">
-                  Unaffiliated with Airbnb, Inc.
-                </p>
-              </div>
+              <img src="/logo-banner.svg" alt="StayBattle" className="h-10 w-auto" />
+              <p className="mt-3 text-xs text-zinc-400">
+                Sign in to vote on the trip.
+              </p>
             </div>
 
             <div className="rounded-sm border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs leading-relaxed text-zinc-300">

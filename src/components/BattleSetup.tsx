@@ -51,7 +51,7 @@ export function BattleSetup() {
     <section className="mx-auto flex w-full max-w-xl flex-col gap-5">
       <div className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="" width={40} height={40} />
+        <img src="/icon.svg" alt="" width={40} height={40} />
         <div>
           <h1 className="text-xl font-bold uppercase tracking-tight text-zinc-100">
             Start a new <span className="sb-gradient-text">battle</span>

@@ -152,63 +152,17 @@ function StaticGrid({
 }
 
 function LogoTile() {
-  // Using SVG with textLength + lengthAdjust forces "Stay" and "Battle" to
-  // render at the exact same width even though they have different character
-  // counts. CSS font-sizing can only approximate that.
   return (
-    <div className="sb-deep-surface relative flex aspect-square flex-col items-center justify-center gap-2 overflow-hidden rounded-sm border border-zinc-800/70 p-2">
+    <div className="sb-deep-surface relative flex aspect-square items-center justify-center overflow-hidden rounded-sm border border-zinc-800/70 p-3">
       <span
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(244,63,94,0.18),transparent_70%)]"
       />
-      <svg
-        viewBox="0 0 100 60"
-        className="relative w-[88%] max-w-[180px]"
-        role="img"
-        aria-label="StayBattle"
-      >
-        <defs>
-          <linearGradient id="sb-tile-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#22d3ee" />
-            <stop offset="35%" stopColor="#34d399" />
-            <stop offset="70%" stopColor="#fb7185" />
-            <stop offset="100%" stopColor="#f97316" />
-          </linearGradient>
-        </defs>
-        <text
-          x="50"
-          y="24"
-          textAnchor="middle"
-          textLength="92"
-          lengthAdjust="spacingAndGlyphs"
-          fontFamily="var(--font-geist-sans), system-ui, sans-serif"
-          fontWeight="900"
-          fontSize="26"
-          letterSpacing="-1"
-          fill="url(#sb-tile-grad)"
-        >
-          Stay
-        </text>
-        <text
-          x="50"
-          y="52"
-          textAnchor="middle"
-          textLength="92"
-          lengthAdjust="spacingAndGlyphs"
-          fontFamily="var(--font-geist-sans), system-ui, sans-serif"
-          fontWeight="900"
-          fontSize="26"
-          letterSpacing="-1"
-          fill="#fafafa"
-        >
-          Battle
-        </text>
-      </svg>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo.svg"
-        alt=""
-        className="relative h-[20%] w-[20%] object-contain opacity-80 drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]"
+        src="/staybattle-main.svg"
+        alt="StayBattle"
+        className="relative h-auto w-[78%] max-w-[180px]"
       />
     </div>
   );

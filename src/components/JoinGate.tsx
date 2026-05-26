@@ -84,7 +84,7 @@ export function JoinGate({ battle }: { battle: Battle }) {
     <section className="mx-auto flex w-full max-w-md flex-col gap-5 py-8">
       <div className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="" width={36} height={36} />
+        <img src="/icon.svg" alt="" width={36} height={36} />
         <div>
           <h2 className="text-xl font-bold uppercase tracking-tight text-zinc-100">
             Got an invite code?

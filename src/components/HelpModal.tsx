@@ -309,10 +309,10 @@ export function HelpButton({ battle }: { battle?: Battle | null }) {
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-5 py-4">
               <div>
-                <h2 className="text-lg font-bold tracking-tight">
-                  <span className="sb-gradient-text">Stay</span>
-                  <span className="text-zinc-50">Battle</span>{" "}
-                  <span className="text-zinc-400">· How it works</span>
+                <h2 className="flex items-center gap-2 text-lg tracking-tight">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo-banner.svg" alt="StayBattle" className="h-5 w-auto" />
+                  <span className="font-bold text-zinc-400">· How it works</span>
                 </h2>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   Tap a section to expand
@@ -645,7 +645,7 @@ export function HelpButton({ battle }: { battle?: Battle | null }) {
 
             {/* Footer */}
             <div className="shrink-0 border-t border-zinc-800 px-5 py-3 text-center text-[10px] uppercase tracking-wider text-zinc-500">
-              Unaffiliated with Airbnb, Inc. · AS IS, no warranty · AGPL v3
+              Unaffiliated with any listing service shown. · AS IS, no warranty · AGPL v3
             </div>
           </div>
         </div>
