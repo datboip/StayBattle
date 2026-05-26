@@ -8,27 +8,9 @@ import { withTripDates, type TripDates } from "@/lib/trip";
 import type { ListingWithStats, VoteValue } from "@/lib/types";
 import { PhotoStrip } from "./PhotoStrip";
 import { AvailabilityBadge } from "./AvailabilityBadge";
+import { RatingSlider } from "./RatingSlider";
 import { shortDisplayName } from "@/lib/title";
 import type { Battle } from "@/lib/battle";
-
-// Pattern C labelled vote buttons. Values 1-5, color spectrum from
-// rose (Nope) through neutral gray (OK) to teal (Love). Mirrors the
-// .sb-gradient-text spectrum and the brand book's two-stop palette.
-const VOTE_OPTIONS: Array<{ value: VoteValue; label: string }> = [
-  { value: 1, label: "Nope" },
-  { value: 2, label: "Meh" },
-  { value: 3, label: "OK" },
-  { value: 4, label: "Like" },
-  { value: 5, label: "Love" },
-];
-
-const VOTE_BUTTON_SELECTED: Record<VoteValue, string> = {
-  1: "border-[#FF6C51] bg-[#FF6C51] text-[#2a0808] shadow-lg shadow-[#FF6C51]/30",
-  2: "border-[#b85240] bg-[#b85240] text-white shadow-lg shadow-[#b85240]/30",
-  3: "border-zinc-500 bg-zinc-500 text-zinc-50 shadow-lg shadow-zinc-500/30",
-  4: "border-[#0a8a92] bg-[#0a8a92] text-white shadow-lg shadow-[#0a8a92]/30",
-  5: "border-[#10C8D2] bg-[#10C8D2] text-[#052a31] shadow-lg shadow-[#10C8D2]/30",
-};
 
 /**
  * One-at-a-time review of every listing. Swipe-through review: see big card →
@@ -344,42 +326,36 @@ export function ReviewMode({
           </button>
         </div>
 
-        {/* Vote bar — Pattern C labelled buttons (Nope / Meh / OK / Like / Love).
-            Tap a button to rate + auto-advance. Skip on the right preserves
-            the old "go to next without voting" affordance. */}
+        {/* Vote bar — Radix slider drag-and-release to rate, auto-advance
+            on commit. If the voter already rated this listing, the slider
+            shows their current rating and the big right-side button
+            switches from "Skip →" to "Keep N · Next →" so they can advance
+            without re-touching the slider. */}
         <div className="border-t border-zinc-900 px-4 py-4">
-          <div className="mb-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+          <div className="mb-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-zinc-500">
             <span>What's the verdict?</span>
             <button
               type="button"
               onClick={goNext}
-              className="rounded-sm border border-zinc-700 bg-zinc-900 px-3 py-1 text-zinc-200 hover:border-zinc-500"
+              className={`rounded-sm border px-3 py-1.5 transition ${
+                myVote
+                  ? "border-[#10C8D2]/60 bg-[#10C8D2]/10 text-[#10C8D2] hover:bg-[#10C8D2]/20"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500"
+              }`}
+              title={myVote ? `Already rated ${myVote}/5 — advance to next listing` : "Move to next listing without rating"}
             >
-              Skip →
+              {myVote ? `Keep ${myVote} · Next →` : "Skip →"}
             </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            {VOTE_OPTIONS.map(({ value, label }) => {
-              const selected = myVote === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => voteAndNext(value)}
-                  disabled={submitting || swipeDir !== null}
-                  aria-pressed={selected}
-                  aria-label={`Rate ${value} out of 5: ${label}`}
-                  className={`flex flex-1 items-center justify-center rounded-sm border py-3 font-mono text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 ${
-                    selected
-                      ? VOTE_BUTTON_SELECTED[value]
-                      : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-zinc-500 hover:text-zinc-50"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+          <RatingSlider
+            value={myVote === 0 ? null : myVote}
+            onCommit={(v) => voteAndNext(v)}
+            size="large"
+            disabled={submitting || swipeDir !== null}
+          />
+          <p className="mt-2 font-mono text-[9px] uppercase tracking-wider text-zinc-600">
+            ← → arrows · 1-5 keys rate · space skips
+          </p>
         </div>
 
         {/* Navigation footer */}

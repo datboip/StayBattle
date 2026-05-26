@@ -531,12 +531,39 @@ body::after {
   color: #d4d4d8;
 }
 
-/* Roster grid — auto-fits as many columns as the viewport allows. */
+/* Roster grid — auto-fits as many columns as the viewport allows by default.
+   The .sb-roster-cols-{1,2,3} modifiers let the user pin a specific column
+   count via the header toggle. Each pinned mode still respects mobile
+   minimums (1 col below 480px) so phones don't squeeze cards too thin.
+
+   Auto-mode minimum is 380px (was 280px — too aggressive, gave 2 columns
+   on narrow laptop windows). At 380px: 1 col below 760px viewport
+   (phones + narrow windows), 2 cols at 760-1139px, 3 cols at 1140-1519px,
+   4 cols beyond that. The `min(100%, 380px)` keeps very narrow phones
+   (<380px) from horizontally scrolling. */
 .sb-roster {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  /* align-items: stretch makes every card in a row match the tallest one,
+     so trailing buttons / footers line up horizontally across the grid even
+     when title text wraps differently. Was `start` before — caused jagged
+     bottoms when one card had a 2-line title and the others had 1-line. */
+  align-items: stretch;
+}
+.sb-roster-cols-1 { grid-template-columns: minmax(0, 1fr); }
+.sb-roster-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sb-roster-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 480px) {
+  .sb-roster-cols-2,
+  .sb-roster-cols-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .sb-roster-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Card neon edge — slim gradient stroke that doesn't look like a Bootstrap card. */
@@ -718,3 +745,117 @@ body::after {
 .statline { display: flex; gap: 1.75rem; align-items: baseline; }
 .statline .n { font: 900 2.5rem/.9 var(--font-plex-sans), Inter, system-ui, sans-serif; color: #fafafa; letter-spacing: -.02em; }
 .statline .l { font: 500 10px/1.2 var(--font-plex-mono), ui-monospace, monospace; letter-spacing: .25em; text-transform: uppercase; color: #71717a; max-width: 10ch; }
+
+/* 1-5 Rating slider (Radix). Brand rose-to-teal gradient track, 5 tick
+   dots at thumb positions, labels under each tick. Uses simple kebab-case
+   class names because BEM-style underscores break Tailwind 4 parsing. */
+
+.rating { width: 100%; }
+.rating-root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+  width: 100%;
+  height: 24px;
+}
+.rating-large .rating-root { height: 32px; }
+
+.rating-track {
+  position: relative;
+  flex-grow: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #FF6C51 0%, #71717a 50%, #10C8D2 100%);
+}
+.rating-large .rating-track { height: 12px; }
+
+.rating-range {
+  position: absolute;
+  height: 100%;
+  background: transparent;
+}
+
+.rating-tick {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.rating-large .rating-tick {
+  width: 8px;
+  height: 8px;
+}
+
+.rating-thumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: #fafafa;
+  border-radius: 50%;
+  border: 3px solid #10C8D2;
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.6);
+  cursor: grab;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.rating-large .rating-thumb {
+  width: 28px;
+  height: 28px;
+  border-width: 4px;
+}
+.rating-thumb:active { cursor: grabbing; transform: scale(1.1); }
+.rating-thumb:focus-visible {
+  outline: 2px solid #FF6C51;
+  outline-offset: 2px;
+}
+
+.rating-uncommitted .rating-thumb {
+  opacity: 0.45;
+  border-color: #71717a;
+}
+
+.rating-ticks {
+  position: relative;
+  height: 14px;
+  margin-top: 4px;
+}
+.rating-large .rating-ticks { height: 16px; margin-top: 6px; }
+
+.rating-tick-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font: 500 10px/1 var(--font-plex-mono), ui-monospace, monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #71717a;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: color 0.15s;
+}
+.rating-large .rating-tick-label { font-size: 11px; }
+.rating-tick-label:first-child { color: #FF6C51; }
+.rating-tick-label:nth-child(5) { color: #10C8D2; }
+.rating-tick-label-active {
+  color: #fafafa !important;
+  font-weight: 700;
+}
+
+.rating-hint {
+  margin-top: 4px;
+  font: 500 10px/1 var(--font-plex-mono), ui-monospace, monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #71717a;
+  text-align: right;
+}
+.rating-large .rating-hint {
+  font-size: 12px;
+  margin-top: 8px;
+}
+.rating-uncommitted .rating-hint { color: #52525b; }
