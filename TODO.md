@@ -158,6 +158,17 @@ from app work.
 - **Per-voter rankings** — instead of (or alongside) the existing upvote /
   downvote, let each voter drag their top 5 into order. Combine via
   Borda count or Condorcet for a more nuanced "winner."
+- **Block self-vote on submitted listings** — currently a submitter can rate
+  their own listing on the 1–5 scale. We're allowing it for v1 and relying
+  on the scale itself to moderate bias. If we see "everyone rates their own
+  5 and the rest 1" complaints, flip to: vote buttons hidden on cards you
+  submitted. One-line check in `castVote` + a UI guard.
+  - **Refinement to consider when we flip:** if a voter submitted 4+
+    listings, allow them to vote on their own. Rationale: a heavy submitter
+    has multiple horses in the race and should be able to differentiate
+    favorites among them. Threshold (4? 3? configurable per battle?) is
+    bikeshed-able. Probably overengineering — keep simple "no self-vote at
+    all" until someone actually complains.
 - **"Why I voted X" prompt** — small text field that appears after voting,
   so the group sees reasoning, not just numbers.
 - **Calendar export** — once a winner is picked, generate an .ics with the
