@@ -66,11 +66,25 @@ export function ListingCard({
       aria-label={disqualified ? `${displayName} (booked for your dates)` : displayName}
     >
       {disqualified && (
+        // GTA "Wasted" / rejected-rubber-stamp treatment: full-card overlay
+        // with a big rotated BOOKED label dead center, double-border like a
+        // real ink stamp, rose glow. Above all card content (z-20). Backdrop
+        // is barely tinted so the listing photo still reads through.
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-3 z-10 rotate-[-8deg] rounded-sm border-2 border-rose-500/80 bg-rose-500/15 px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-[0.2em] text-rose-200 shadow-[0_0_20px_-5px_rgba(244,63,94,0.5)]"
+          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-rose-950/20"
         >
-          Booked
+          <span
+            className="select-none rotate-[-10deg] border-[6px] border-[#FF6C51] bg-[#FF6C51]/15 px-6 py-3 font-mono text-4xl font-black uppercase tracking-[0.18em] text-[#FF6C51] shadow-[0_0_40px_-5px_rgba(255,108,81,0.6)] sm:text-5xl"
+            style={{
+              textShadow:
+                "0 2px 8px rgba(255,108,81,0.8), 0 0 24px rgba(255,108,81,0.5)",
+              boxShadow:
+                "0 0 40px -5px rgba(255,108,81,0.6), inset 0 0 8px rgba(255,108,81,0.3), 0 0 0 2px rgba(255,108,81,0.4), 0 0 0 12px transparent, 0 0 0 14px rgba(255,108,81,0.2)",
+            }}
+          >
+            Booked
+          </span>
         </div>
       )}
       {/* Top band: rank + score */}
@@ -97,13 +111,16 @@ export function ListingCard({
         />
       </div>
 
-      {/* Identity */}
+      {/* Identity — title reserves 2 lines of space whether the text fills
+          them or not, so cards line up across the grid regardless of title
+          length. min-height matches 2 × line-height of the size (snug
+          leading on text-sm = ~1.375 × 14px = ~19.25px → 2 lines ≈ 38.5px). */}
       <div className="flex flex-col gap-0.5 px-3 pt-3">
         <a
           href={datedUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="line-clamp-2 text-sm font-bold uppercase leading-snug tracking-wide text-zinc-100 hover:underline"
+          className="line-clamp-2 min-h-[2.75rem] text-sm font-bold uppercase leading-snug tracking-wide text-zinc-100 hover:underline"
           title={fullTitle}
         >
           {displayName}
@@ -136,22 +153,24 @@ export function ListingCard({
         />
       </div>
 
-      {/* Vote bar */}
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-zinc-900 px-3 py-3">
+      {/* Vote bar — pills get their own full-width row so all 5 labels stay
+          legible. Trash-talk toggle sits on its own row below, sharing space
+          with the voter-avatars chip cloud. */}
+      <div className="mt-3 border-t border-zinc-900 px-3 py-3">
         <VoteButtons listingId={listing.id} votes={listing.votes} score={listing.score} />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-2">
+        <VoterAvatars votes={listing.votes} />
         <button
           type="button"
           onClick={() => setOpenTalk((o) => !o)}
-          className="sb-fight-label rounded-sm border border-zinc-800 px-2 py-1 text-[10px] text-zinc-300 hover:border-rose-500/50 hover:text-rose-200"
+          className="sb-fight-label ml-auto rounded-sm border border-zinc-800 px-2 py-1 text-[10px] text-zinc-300 hover:border-rose-500/50 hover:text-rose-200"
           aria-expanded={openTalk}
           aria-controls={`talk-${listing.id}`}
         >
           trash talk · {listing.comments.length}
         </button>
-      </div>
-
-      <div className="px-3 pb-2">
-        <VoterAvatars votes={listing.votes} />
       </div>
 
       {openTalk && (

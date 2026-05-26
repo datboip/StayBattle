@@ -11,6 +11,8 @@ import { shortDisplayName } from "@/lib/title";
 import { confirmDialog } from "./Modal";
 import type { ListingWithStats, Place } from "@/lib/types";
 
+// Default fallback icon (the standard leaflet teardrop) — only used if a
+// listing has no availability status info at all.
 const ListingIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -21,6 +23,39 @@ const ListingIcon = L.icon({
   shadowSize: [41, 41],
 });
 L.Marker.prototype.options.icon = ListingIcon;
+
+/**
+ * Brand-color teardrop pin per availability status. Booked listings get a
+ * rose pin with a big white ✕ so they're instantly distinguishable from
+ * available ones on a crowded map — they still show on the map (the user
+ * may want to look at the location for context) but visually shouted as
+ * NOT options.
+ */
+function listingPin(status: "available" | "unavailable" | "unknown") {
+  const fill =
+    status === "available"
+      ? "#10C8D2"
+      : status === "unavailable"
+        ? "#FF6C51"
+        : "#a1a1aa";
+  // SVG teardrop, 25w × 41h to match Leaflet's stock marker so the anchor
+  // math doesn't shift. The ✕ overlay only appears on booked.
+  const xMark =
+    status === "unavailable"
+      ? `<path d="M9 16 L16 23 M16 16 L9 23" stroke="white" stroke-width="2.5" stroke-linecap="round"/>`
+      : "";
+  return L.divIcon({
+    className: "",
+    html: `<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+      <path d="M12.5 1 C 6 1 1 6 1 12.5 C 1 22 12.5 40 12.5 40 C 12.5 40 24 22 24 12.5 C 24 6 19 1 12.5 1 Z" fill="${fill}" stroke="white" stroke-width="1.5"/>
+      <circle cx="12.5" cy="12.5" r="4" fill="white" fill-opacity="${status === "unavailable" ? "0" : "0.85"}"/>
+      ${xMark}
+    </svg>`,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+  });
+}
 
 // Reference-place marker. NOTE: divIcon's `html` is interpreted as raw HTML —
 // only put static markup here. Never interpolate user-controlled strings into
@@ -118,11 +153,27 @@ export default function MapView({
         />
         <FitBounds points={allPoints} />
 
-        {placedListings.map((l) => (
+        {placedListings.map((l) => {
+          // Resolve effective status the same way the roster does:
+          // organizer overrides win, then the auto-check, default to "unknown".
+          const status: "available" | "unavailable" | "unknown" =
+            l.availability_override_status === "available"
+              ? "available"
+              : l.availability_override_status === "unavailable"
+                ? "unavailable"
+                : l.availability_override
+                  ? "available"
+                  : l.availability_status === "available"
+                    ? "available"
+                    : l.availability_status === "unavailable"
+                      ? "unavailable"
+                      : "unknown";
+          return (
           <Marker
             key={l.id}
             position={[l.latitude, l.longitude]}
             title={l.title || "Listing"}
+            icon={listingPin(status)}
           >
             <Popup>
               <div className="flex w-56 flex-col gap-1">
@@ -173,7 +224,8 @@ export default function MapView({
               </div>
             </Popup>
           </Marker>
-        ))}
+          );
+        })}
 
         {places.map((p) => (
           <Marker
