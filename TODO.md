@@ -118,14 +118,20 @@ a real "argument-settler" layer.
 - **Notes field** — "this is the one with the good sushi", "kids loved
   this last time", etc. Drop-pin form already has a `url` slot; a free-
   text note would be the natural next field.
-- ~~**Per-listing distance summary**~~ — **DONE (v1).** Each listing card
-  shows a "Nearby" pill row with the 3 closest pinned places (any
-  category) under 100km, by straight-line haversine distance. Category
-  emoji + place name + distance ("🎢 Magic Kingdom 8.2km"). Helper +
-  unit tests live in `src/lib/distance.ts`. **Still open:** swap
-  straight-line for OSRM/Valhalla drive-time if anyone actually cares
-  about traffic — v1 distance is enough to settle "this one's right
-  next to the parks" vs "this one's 25min from the airport."
+- ~~**Per-listing distance summary**~~ — **DONE.** Each card shows a
+  "Nearby" pill row with the 3 closest pinned places (any category)
+  under 100km. v1 used straight-line haversine; v2 (current) calls
+  OSRM at `router.project-osrm.org` per SSR for the full listings ×
+  places matrix and renders **drive time** ("🎢 Magic Kingdom 12min")
+  instead of km. Falls back to haversine display on OSRM failure /
+  unreachable / null pairs so the row never disappears. Tooltip on
+  drive-time pills includes the crow's flight km for the curious.
+  - **Still open:** persistent cache table (`route_durations`) so
+    repeated SSRs don't re-hit OSRM. Right now the v1 OSRM call adds
+    ~500ms-1s to first-render latency on a battle with many
+    listings × places. Cloudflare in front absorbs subsequent loads.
+  - **Still open:** point `STAYBATTLE_OSRM_URL` at a self-hosted OSRM
+    when traffic outgrows the public demo's rate limits.
 - ~~**Map filter chips**~~ — **DONE.** Bottom-left of the map, a chip
   per category that has ≥1 pin (so a 3-category map doesn't show 10
   chips). Tap to hide that category; line-through + dimmed text signals

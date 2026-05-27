@@ -65,6 +65,7 @@ export function ListingGrid({
   battle,
   places = [],
   requirements = [],
+  driveDurations,
 }: {
   listings: ListingWithStats[];
   tripDates: TripDates;
@@ -74,6 +75,10 @@ export function ListingGrid({
   /** Battle-level must-have amenity tags. Each card renders a ✓ / "Missing"
    *  row against these. Empty list = no row rendered. */
   requirements?: AmenityTag[];
+  /** `${listingId}:${placeId}` → seconds. When present the Nearby pill
+   *  shows drive time instead of straight-line km. Missing entries fall
+   *  back to haversine display (OSRM unreachable, place too far, etc.). */
+  driveDurations?: Map<string, number>;
 }) {
   const router = useRouter();
   const { voter } = useVoter();
@@ -253,6 +258,7 @@ export function ListingGrid({
             battle={battle}
             places={places}
             requirements={requirements}
+            driveDurations={driveDurations}
           />
         ))}
         {ranked.length % 2 === 1 && (

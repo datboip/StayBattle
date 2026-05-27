@@ -14,6 +14,7 @@ import { confirmDialog } from "./Modal";
 import type { ListingWithStats, Place } from "@/lib/types";
 import type { Battle } from "@/lib/battle";
 import { nearestPlaces, formatKm } from "@/lib/distance";
+import { formatDuration } from "@/lib/routing";
 import { resolvePlaceCategory } from "@/lib/place-categories";
 import { checkListingRequirements, AMENITY_LABELS } from "@/lib/requirements";
 import type { AmenityTag } from "@/lib/airbnb-graphql";
@@ -34,6 +35,7 @@ export function ListingCard({
   battle,
   places = [],
   requirements = [],
+  driveDurations,
 }: {
   listing: ListingWithStats;
   rank: number;
@@ -44,6 +46,9 @@ export function ListingCard({
   places?: Place[];
   /** Battle-level must-have amenities. Empty/omitted = no must-haves row. */
   requirements?: AmenityTag[];
+  /** `${listingId}:${placeId}` → seconds. When present for a pair, render
+   *  drive time instead of straight-line km on the Nearby pill. */
+  driveDurations?: Map<string, number>;
 }) {
   const router = useRouter();
   const [isRemoving, startRemove] = useTransition();
@@ -239,15 +244,28 @@ export function ListingCard({
             </span>
             {nearby.map((n) => {
               const cat = resolvePlaceCategory(n.kind);
+              // Prefer OSRM drive time when we have it for this pair;
+              // otherwise fall back to straight-line km so the row still
+              // renders if routing is unreachable. The title attribute
+              // always includes both for the curious.
+              const seconds = driveDurations?.get(`${listing.id}:${n.id}`);
+              const distanceLabel =
+                typeof seconds === "number"
+                  ? formatDuration(seconds)
+                  : formatKm(n.km);
+              const tooltip =
+                typeof seconds === "number"
+                  ? `${cat.label} · ${n.name} · ${formatKm(n.km)} crow's flight`
+                  : `${cat.label} · ${n.name}`;
               return (
                 <span
                   key={n.id}
-                  title={`${cat.label} · ${n.name}`}
+                  title={tooltip}
                   className="inline-flex items-center gap-1 rounded-sm border border-zinc-800 bg-zinc-950/70 px-1.5 py-0.5 font-mono text-[10px] text-zinc-300"
                 >
                   <span aria-hidden="true">{cat.emoji}</span>
                   <span className="max-w-[8rem] truncate">{n.name}</span>
-                  <span className="text-zinc-500">{formatKm(n.km)}</span>
+                  <span className="text-zinc-500">{distanceLabel}</span>
                 </span>
               );
             })}

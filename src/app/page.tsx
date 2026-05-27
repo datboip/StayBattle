@@ -10,6 +10,7 @@ import { listPastBattles } from "@/lib/past-battles-server";
 import { readVoterCookie } from "@/lib/auth-cookie";
 import { getBattleRequirements } from "@/lib/requirements-server";
 import { RequirementsPanel } from "@/components/RequirementsPanel";
+import { fetchDriveMatrix } from "@/lib/routing";
 import { NameGate } from "@/components/NameGate";
 import { HeaderBar } from "@/components/HeaderBar";
 import { AddListingForm } from "@/components/AddListingForm";
@@ -26,6 +27,41 @@ import { TrophyCase } from "@/components/TrophyCase";
 import { DemoModal } from "@/components/DemoModal";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Build a `${listingId}:${placeId}` → seconds map by calling OSRM once
+ * for the full listings × places product. Drops pairs where OSRM
+ * returned null (disconnected island, no road network, etc.) or where
+ * the call failed entirely; callers degrade those to haversine display.
+ */
+async function buildDriveDurations(
+  listings: import("@/lib/types").ListingWithStats[],
+  places: import("@/lib/types").Place[],
+): Promise<Map<string, number>> {
+  const origins = listings.filter(
+    (l): l is typeof l & { latitude: number; longitude: number } =>
+      typeof l.latitude === "number" && typeof l.longitude === "number",
+  );
+  const dests = places.filter(
+    (p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude),
+  );
+  if (origins.length === 0 || dests.length === 0) return new Map();
+  const matrix = await fetchDriveMatrix(
+    origins.map((l) => ({ lat: l.latitude, lng: l.longitude })),
+    dests.map((p) => ({ lat: p.latitude, lng: p.longitude })),
+  );
+  if (!matrix) return new Map();
+  const map = new Map<string, number>();
+  for (let i = 0; i < origins.length; i++) {
+    for (let j = 0; j < dests.length; j++) {
+      const seconds = matrix[i]?.[j];
+      if (typeof seconds === "number" && seconds >= 0) {
+        map.set(`${origins[i].id}:${dests[j].id}`, seconds);
+      }
+    }
+  }
+  return map;
+}
 
 export default async function Home() {
   const demoMode = process.env.STAYBATTLE_DEMO_MODE === "true";
@@ -51,6 +87,15 @@ export default async function Home() {
   const participants =
     isMember && battle ? listParticipants(battle.id) : [];
   const requirements = isMember ? getBattleRequirements() : [];
+
+  // Drive-time matrix for the "Nearby" pills. Falls back to haversine
+  // display in the card if OSRM is unreachable or returns null cells.
+  // Built once per SSR; if perf becomes an issue we'll add a persistent
+  // cache table keyed by (listing_id, place_id) — for now the simpler
+  // shape wins.
+  const driveDurations = isMember
+    ? await buildDriveDurations(listings, places)
+    : new Map<string, number>();
   const tripDates = battle
     ? { checkIn: battle.check_in, checkOut: battle.check_out }
     : getTripDates();
@@ -107,6 +152,7 @@ export default async function Home() {
                   battle={battle}
                   places={places}
                   requirements={requirements}
+                  driveDurations={driveDurations}
                 />
                 <MapSection
                   listings={listings}
