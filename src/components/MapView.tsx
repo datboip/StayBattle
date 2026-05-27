@@ -73,9 +73,23 @@ const PlaceIcon = L.divIcon({
   popupAnchor: [0, -10],
 });
 
-function FitBounds({ points }: { points: [number, number][] }) {
+/**
+ * Run an initial fit-to-points exactly once when the map first has data,
+ * then never again automatically — the user's pan/zoom is theirs to keep.
+ * A separate "fit all" button in the map header can trigger a refit on
+ * demand via the imperative `refitRef`.
+ */
+function MapFitter({
+  points,
+  refitRef,
+}: {
+  points: [number, number][];
+  refitRef: React.MutableRefObject<(() => void) | null>;
+}) {
   const map = useMap();
-  useEffect(() => {
+  const didInitialFit = useRef(false);
+
+  const doFit = () => {
     if (points.length === 0) return;
     if (points.length === 1) {
       map.setView(points[0], 11);
@@ -83,7 +97,19 @@ function FitBounds({ points }: { points: [number, number][] }) {
       const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-  }, [map, points]);
+  };
+
+  // Expose the imperative refit so the parent's "fit all" button can call it.
+  refitRef.current = doFit;
+
+  useEffect(() => {
+    if (didInitialFit.current) return;
+    if (points.length === 0) return;
+    didInitialFit.current = true;
+    doFit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points]);
+
   return null;
 }
 
@@ -165,19 +191,25 @@ export default function MapView({
   const [dropPinMode, setDropPinMode] = useState(false);
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingName, setPendingName] = useState("");
+  const [pendingAddress, setPendingAddress] = useState("");
   const [pendingUrl, setPendingUrl] = useState("");
   const [isAddingPlace, startAddPlace] = useTransition();
+  // Imperative handle so the "fit all" button can refit on demand without
+  // triggering automatic refits via useEffect dependencies.
+  const refitRef = useRef<(() => void) | null>(null);
 
   const handleMapClick = (lat: number, lng: number) => {
     setPendingPin({ lat, lng });
     setDropPinMode(false);
     setPendingName("");
+    setPendingAddress("");
     setPendingUrl("");
   };
 
   const cancelPendingPin = () => {
     setPendingPin(null);
     setPendingName("");
+    setPendingAddress("");
     setPendingUrl("");
   };
 
@@ -188,6 +220,7 @@ export default function MapView({
     startAddPlace(async () => {
       const res = await addPlaceAtCoords(
         name,
+        pendingAddress.trim() || null,
         pendingUrl.trim() || null,
         pendingPin.lat,
         pendingPin.lng,
@@ -229,26 +262,36 @@ export default function MapView({
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-zinc-800">
-      {/* Drop-pin toggle button — floats over the top-right of the map.
-          When active, cursor changes to crosshair via CSS. Disabled while
-          a pin is pending (you can only confirm/cancel that one first). */}
-      <button
-        type="button"
-        onClick={() => setDropPinMode((v) => !v)}
-        disabled={!!pendingPin || !voter}
-        className={`absolute right-3 top-3 z-[1000] inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-50 ${
-          dropPinMode
-            ? "border-[#fbbf24] bg-[#fbbf24] text-[#3a2a04] shadow-lg"
-            : "border-zinc-700 bg-zinc-950/80 text-zinc-200 backdrop-blur hover:border-[#fbbf24]/60 hover:text-[#fbbf24]"
-        }`}
-        title={
-          dropPinMode
-            ? "Click anywhere on the map to drop a pin, or click here again to cancel"
-            : "Click to enter drop-pin mode, then click on the map where you want a reference pin"
-        }
-      >
-        {dropPinMode ? "❌ cancel" : "📍 drop a pin"}
-      </button>
+      {/* Floating controls — top-right of the map. Drop-a-pin toggle plus
+          a "fit all" refit button. Both are above the leaflet layers
+          (z-[1000]) so they stay clickable. */}
+      <div className="absolute right-3 top-3 z-[1000] flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => refitRef.current?.()}
+          className="inline-flex items-center gap-1 rounded-sm border border-zinc-700 bg-zinc-950/80 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-200 backdrop-blur hover:border-[#10C8D2]/60 hover:text-[#10C8D2]"
+          title="Zoom out to show every pin on the map (listings + reference pins)"
+        >
+          ⤢ fit all
+        </button>
+        <button
+          type="button"
+          onClick={() => setDropPinMode((v) => !v)}
+          disabled={!!pendingPin || !voter}
+          className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            dropPinMode
+              ? "border-[#fbbf24] bg-[#fbbf24] text-[#3a2a04] shadow-lg"
+              : "border-zinc-700 bg-zinc-950/80 text-zinc-200 backdrop-blur hover:border-[#fbbf24]/60 hover:text-[#fbbf24]"
+          }`}
+          title={
+            dropPinMode
+              ? "Click anywhere on the map to drop a pin, or click here again to cancel"
+              : "Click to enter drop-pin mode, then click on the map where you want a reference pin"
+          }
+        >
+          {dropPinMode ? "❌ cancel" : "📍 drop a pin"}
+        </button>
+      </div>
       <MapContainer
         center={initialCenter.current}
         zoom={2}
@@ -264,7 +307,7 @@ export default function MapView({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitBounds points={allPoints} />
+        <MapFitter points={allPoints} refitRef={refitRef} />
         <MapClickCapture active={dropPinMode} onPick={handleMapClick} />
 
         {pendingPin && (
@@ -302,6 +345,22 @@ export default function MapView({
                   placeholder="e.g. Disney World"
                   maxLength={120}
                   className="w-full rounded-sm border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-rose-400"
+                />
+                <input
+                  value={pendingAddress}
+                  onChange={(e) => setPendingAddress(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitPendingPin();
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelPendingPin();
+                    }
+                  }}
+                  placeholder="optional address"
+                  maxLength={240}
+                  className="w-full rounded-sm border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-rose-400"
                 />
                 <input
                   value={pendingUrl}
@@ -428,6 +487,11 @@ export default function MapView({
             <Popup>
               <div className="flex w-52 flex-col gap-1.5">
                 <p className="text-sm font-semibold leading-tight">{p.name}</p>
+                {p.address && (
+                  <p className="text-xs leading-tight text-zinc-300">
+                    {p.address}
+                  </p>
+                )}
                 <div className="flex flex-col gap-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   <span>
                     📌 reference pin

@@ -139,6 +139,13 @@ const COMMENT_MIGRATIONS: { column: string; type: string }[] = [
   { column: "parent_id", type: "text" },
 ];
 
+const PLACE_MIGRATIONS: { column: string; type: string }[] = [
+  // Optional street/postal address typed by the user when dropping a pin.
+  // Free-text; not used for routing — just shown in the popup so the crew
+  // knows what they're looking at without having to read raw lat/lng.
+  { column: "address", type: "text" },
+];
+
 function ensureSchema(handle: Database.Database) {
   handle.pragma("journal_mode = WAL");
   handle.pragma("foreign_keys = ON");
@@ -161,6 +168,15 @@ function ensureSchema(handle: Database.Database) {
   for (const { column, type } of COMMENT_MIGRATIONS) {
     if (!existingComment.has(column)) {
       handle.prepare(`alter table comments add column ${column} ${type}`).run();
+    }
+  }
+  const placeCols = handle
+    .prepare("select name from pragma_table_info('places')")
+    .all() as { name: string }[];
+  const existingPlace = new Set(placeCols.map((c) => c.name));
+  for (const { column, type } of PLACE_MIGRATIONS) {
+    if (!existingPlace.has(column)) {
+      handle.prepare(`alter table places add column ${column} ${type}`).run();
     }
   }
 

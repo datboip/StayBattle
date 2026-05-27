@@ -422,6 +422,7 @@ export async function addPlace(
  */
 export async function addPlaceAtCoords(
   name: string,
+  address: string | null,
   url: string | null,
   lat: number,
   lng: number,
@@ -453,6 +454,8 @@ export async function addPlaceAtCoords(
       // Reject malformed URLs silently — name + coords still get saved.
     }
   }
+  // Free-text address — capped at 240 chars, no validation. Stored as-is.
+  const cleanAddress = address ? cleanString(address, 240) || null : null;
 
   if (placeAlreadyExists({ url: cleanUrl, lat, lng })) {
     revalidatePath("/");
@@ -460,9 +463,18 @@ export async function addPlaceAtCoords(
   }
 
   db.prepare(
-    `insert into places (id, name, url, latitude, longitude, kind, added_by_name)
-     values (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(newId(), cleanName, cleanUrl, lat, lng, "reference", addedBy || null);
+    `insert into places (id, name, address, url, latitude, longitude, kind, added_by_name)
+     values (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    newId(),
+    cleanName,
+    cleanAddress,
+    cleanUrl,
+    lat,
+    lng,
+    "reference",
+    addedBy || null,
+  );
 
   revalidatePath("/");
   return { ok: true };

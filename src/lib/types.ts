@@ -106,6 +106,10 @@ export type Place = {
   id: string;
   name: string;
   url: string | null;
+  /** Optional free-text street address typed by the user when dropping the
+   *  pin. Not used for routing — just shown in the popup so the crew can
+   *  identify the spot without reading raw lat/lng. */
+  address: string | null;
   latitude: number;
   longitude: number;
   kind: string;
