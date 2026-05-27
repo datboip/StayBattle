@@ -21,18 +21,6 @@ const csp = [
   ...commonCspTail,
 ].join("; ");
 
-// /brand serves the static brand book HTML which links to Google Fonts. Relax
-// style-src and font-src for that route only so IBM Plex / Black Ops One can
-// load. The rest of the app uses next/font and keeps the strict CSP above.
-const brandCsp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data: https://fonts.gstatic.com",
-  ...commonCspTail,
-].join("; ");
-
 const baseSecurityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -42,11 +30,6 @@ const baseSecurityHeaders = [
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
-  ...baseSecurityHeaders,
-];
-
-const brandSecurityHeaders = [
-  { key: "Content-Security-Policy", value: brandCsp },
   ...baseSecurityHeaders,
 ];
 
@@ -96,18 +79,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/(.*)", headers: securityHeaders },
-      // Route-specific overrides go AFTER the catch-all — Next.js merges header
-      // rules in order and the last matching value wins for duplicate keys.
-      { source: "/brand", headers: brandSecurityHeaders },
-      { source: "/brand/:path*", headers: brandSecurityHeaders },
     ];
   },
-  async rewrites() {
-    return [
-      { source: "/brand", destination: "/brand/index.html" },
-      { source: "/brand/", destination: "/brand/index.html" },
-    ];
-  },
+  // /brand used to live in public/brand/index.html as a duplicate of the
+  // marketing-site brand book. Now the marketing site at staybattle.com/brand
+  // is the canonical brand surface — nginx redirects app.staybattle.com/brand
+  // to it, and the app repo carries a docs/BRAND.md summary instead.
 };
 
 export default nextConfig;

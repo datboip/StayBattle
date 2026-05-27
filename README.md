@@ -13,7 +13,7 @@ Pit Airbnb listings against each other. Rate, argue in the comments, settle it o
 [![Self-hosted](https://img.shields.io/badge/self--hosted-%E2%9C%93-purple)](https://github.com/awesome-selfhosted/awesome-selfhosted)
 [![No tracking](https://img.shields.io/badge/tracking-none-success)](#privacy)
 
-**[🌐 Live demo](https://app.staybattle.com) · [📖 Brand](https://staybattle.com/brand) · [🛡 Privacy](PRIVACY.md) · [📜 Terms](TOS.md)**
+**[🌐 Live demo](https://app.staybattle.com) · [🎨 Brand snapshot](docs/BRAND.md) · [📖 Full brand book](https://staybattle.com/brand) · [🛡 Privacy](PRIVACY.md) · [📜 Terms](TOS.md)**
 
 </div>
 
