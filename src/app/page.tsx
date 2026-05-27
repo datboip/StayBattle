@@ -58,6 +58,7 @@ export default async function Home() {
                   listings={listings}
                   tripDates={tripDates}
                   battle={battle}
+                  places={places}
                 />
                 <MapSection
                   listings={listings}

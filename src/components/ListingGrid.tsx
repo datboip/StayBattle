@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { rankListings, isDisqualified, type SortMode } from "@/lib/rank";
-import type { ListingWithStats } from "@/lib/types";
+import type { ListingWithStats, Place } from "@/lib/types";
 import type { TripDates } from "@/lib/trip";
 import type { Battle } from "@/lib/battle";
 import { ListingCard } from "./ListingCard";
@@ -62,10 +62,13 @@ export function ListingGrid({
   listings,
   tripDates,
   battle,
+  places = [],
 }: {
   listings: ListingWithStats[];
   tripDates: TripDates;
   battle?: Battle | null;
+  /** Pinned reference places used for the "Nearby" pill row on each card. */
+  places?: Place[];
 }) {
   const router = useRouter();
   const { voter } = useVoter();
@@ -243,6 +246,7 @@ export function ListingGrid({
             rank={i + 1}
             tripDates={tripDates}
             battle={battle}
+            places={places}
           />
         ))}
         {ranked.length % 2 === 1 && (

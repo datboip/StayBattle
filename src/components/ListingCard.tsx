@@ -11,8 +11,10 @@ import { AvailabilityBadge } from "./AvailabilityBadge";
 import { withTripDates, type TripDates } from "@/lib/trip";
 import { shortDisplayName } from "@/lib/title";
 import { confirmDialog } from "./Modal";
-import type { ListingWithStats } from "@/lib/types";
+import type { ListingWithStats, Place } from "@/lib/types";
 import type { Battle } from "@/lib/battle";
+import { nearestPlaces, formatKm } from "@/lib/distance";
+import { resolvePlaceCategory } from "@/lib/place-categories";
 
 function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -28,11 +30,15 @@ export function ListingCard({
   rank,
   tripDates,
   battle,
+  places = [],
 }: {
   listing: ListingWithStats;
   rank: number;
   tripDates: TripDates;
   battle?: Battle | null;
+  /** Reference places used to render the "Nearby" pill row. Empty/omitted =
+   *  no row rendered. Filtered to those with usable coordinates before use. */
+  places?: Place[];
 }) {
   const router = useRouter();
   const [isRemoving, startRemove] = useTransition();
@@ -152,6 +158,52 @@ export function ListingCard({
           }
         />
       </div>
+
+      {/* Nearby reference places — top 3 closest pinned places (any
+          category) by straight-line distance. Helps the crew weigh
+          "this one's right next to the parks" against "this one's
+          cheap but 25min from the airport." Hidden when the listing
+          has no coords or no candidate places are nearby. */}
+      {(() => {
+        if (listing.latitude == null || listing.longitude == null) return null;
+        const candidates = places
+          .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            kind: p.kind,
+            lat: p.latitude,
+            lng: p.longitude,
+          }));
+        if (candidates.length === 0) return null;
+        const nearby = nearestPlaces(
+          { lat: listing.latitude, lng: listing.longitude },
+          candidates,
+          { limit: 3, maxKm: 100 },
+        );
+        if (nearby.length === 0) return null;
+        return (
+          <div className="mx-3 mt-2 flex flex-wrap items-center gap-1">
+            <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-500">
+              Nearby
+            </span>
+            {nearby.map((n) => {
+              const cat = resolvePlaceCategory(n.kind);
+              return (
+                <span
+                  key={n.id}
+                  title={`${cat.label} · ${n.name}`}
+                  className="inline-flex items-center gap-1 rounded-sm border border-zinc-800 bg-zinc-950/70 px-1.5 py-0.5 font-mono text-[10px] text-zinc-300"
+                >
+                  <span aria-hidden="true">{cat.emoji}</span>
+                  <span className="max-w-[8rem] truncate">{n.name}</span>
+                  <span className="text-zinc-500">{formatKm(n.km)}</span>
+                </span>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Vote bar — pills get their own full-width row so all 5 labels stay
           legible. Trash-talk toggle sits on its own row below, sharing space

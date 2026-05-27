@@ -111,9 +111,14 @@ a real "argument-settler" layer.
 - **Notes field** — "this is the one with the good sushi", "kids loved
   this last time", etc. Drop-pin form already has a `url` slot; a free-
   text note would be the natural next field.
-- **Per-listing distance summary** — for each booking candidate, show "8min
-  to SeaWorld · 25min to Epcot · 3min to closest grocery." Straight-line
-  distance is fine for v1; OSRM / Valhalla routing for v2 if anyone cares.
+- ~~**Per-listing distance summary**~~ — **DONE (v1).** Each listing card
+  shows a "Nearby" pill row with the 3 closest pinned places (any
+  category) under 100km, by straight-line haversine distance. Category
+  emoji + place name + distance ("🎢 Magic Kingdom 8.2km"). Helper +
+  unit tests live in `src/lib/distance.ts`. **Still open:** swap
+  straight-line for OSRM/Valhalla drive-time if anyone actually cares
+  about traffic — v1 distance is enough to settle "this one's right
+  next to the parks" vs "this one's 25min from the airport."
 - ~~**Map filter chips**~~ — **DONE.** Bottom-left of the map, a chip
   per category that has ≥1 pin (so a 3-category map doesn't show 10
   chips). Tap to hide that category; line-through + dimmed text signals
