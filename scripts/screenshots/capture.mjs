@@ -63,12 +63,15 @@ async function makePage(browser, { viewport = "desktop", signedIn = true } = {})
       document.addEventListener('DOMContentLoaded', inject);
     }
   });
-  // Mobile shots get a fake iOS status bar (9:41 + signal/wifi/battery
-  // icons) + a Dynamic Island silhouette painted in. Makes the captured
-  // PNG read as a real iPhone screenshot rather than a flat web page.
-  // Built via DOM ops only — no innerHTML — to satisfy the security
-  // hook that blocks string-template HTML injection.
-  if (viewport === "mobile") {
+  // (Status bar injection used to happen here during mobile capture
+  // but pushed the page layout badly — Next.js's <html> padding wasn't
+  // honored by all the app's fixed/sticky elements, so the status bar
+  // ended up overlapping the app's own header. Moved to the
+  // bakePhoneMockup step instead: the status bar gets painted at the
+  // top of the screen area in the bake template, with the captured
+  // screenshot offset down by the status bar height. Clean separation.)
+  // eslint-disable-next-line no-constant-condition
+  if (false && viewport === "mobile") {
     await ctx.addInitScript(() => {
       const SVG_NS = 'http://www.w3.org/2000/svg';
       const inject = () => {
@@ -460,14 +463,21 @@ async function main() {
   //     headless HTML render, then screenshots THAT — output is a
   //     single PNG with bezel + Dynamic Island + screen baked in, no
   //     runtime CSS frame logic needed on the marketing site.
+  // Both phones show the SAME app view — different device frames,
+  // identical UI inside. Previous attempt used voting-grid on one and
+  // review-mode on the other, which read as "two unrelated screens"
+  // because the rating slider looked completely different between
+  // them (compact 1-5 vs labeled Nope/Meh/OK/Like/Love). Same view
+  // on both makes the message clean: "your app on iPhone AND on
+  // Android, looks the same."
   await bakePhoneMockup(browser, {
     inputName: "review-mode-mobile",
     outputName: "iphone-review-mode",
     frame: "iphone",
   });
   await bakePhoneMockup(browser, {
-    inputName: "voting-grid-mobile",
-    outputName: "pixel-voting-grid",
+    inputName: "review-mode-mobile",
+    outputName: "pixel-review-mode",
     frame: "pixel",
   });
 
@@ -536,9 +546,17 @@ async function bakePhoneMockup(browser, { inputName, outputName, frame }) {
   const imgSrc = `data:image/png;base64,${imgBuf.toString("base64")}`;
   const s = def.screen;
 
+  // Status bar sits AT THE TOP OF THE SCREEN AREA (inside the bezel,
+  // above the screenshot). Same shape as real iOS — the app content
+  // is rendered below the status bar safe area. Height is 6.5% of the
+  // screen area on iPhone (matches the iPhone 15 Pro's 47/720 ratio
+  // roughly), 5.5% on Pixel.
+  const statusBarHeightPct = frame === "iphone" ? 6.5 : 5.5;
+
   // The HTML template that paints the phone. The screen <img> sits
-  // behind the SVG frame; the SVG's mask cuts a hole where the screen
-  // should be, so the screenshot shows through that hole cleanly.
+  // behind the SVG frame in the screen-rect's content area BELOW the
+  // status bar. The status bar lives in its own absolutely-positioned
+  // strip at the top of the screen area.
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;padding:0;background:transparent;width:100%;height:100%;}
 #phone{
@@ -557,17 +575,77 @@ html,body{margin:0;padding:0;background:transparent;width:100%;height:100%;}
   border-radius:${s.radius};
   background:#0a0a0c;
 }
-#phone .screen img{
+#phone .status-bar{
+  position:absolute;
+  left:0;right:0;top:0;
+  height:${statusBarHeightPct}%;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 7% 0 8%;
+  font:600 14px -apple-system,SF Pro Text,system-ui,sans-serif;
+  color:#fff;letter-spacing:-0.02em;
+  z-index:2;
+  pointer-events:none;
+}
+#phone .status-bar .icons{
+  display:inline-flex;gap:5px;align-items:center;
+}
+#phone .status-bar svg{display:block;}
+#phone .battery{
+  display:inline-flex;align-items:center;gap:1px;
+}
+#phone .battery .outer{
+  width:22px;height:10px;border:1px solid rgba(255,255,255,0.6);
+  border-radius:3px;padding:1px;display:inline-flex;
+  align-items:center;justify-content:flex-start;
+}
+#phone .battery .fill{
+  width:80%;height:100%;background:#fff;border-radius:1.5px;
+}
+#phone .battery .nub{
+  width:1.5px;height:4px;background:rgba(255,255,255,0.6);
+  border-radius:0 1px 1px 0;
+}
+#phone .screenshot{
+  position:absolute;
+  left:0;right:0;
+  top:${statusBarHeightPct}%;
+  bottom:0;
+  overflow:hidden;
+}
+#phone .screenshot img{
   display:block;width:100%;height:100%;
   object-fit:cover;object-position:top center;
 }
 #phone svg.frame{
   position:absolute;inset:0;width:100%;height:100%;
   pointer-events:none;
+  z-index:3;
 }
 </style></head><body>
 <div id="phone">
-  <div class="screen"><img src="${imgSrc}"></div>
+  <div class="screen">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="icons">
+        <svg width="17" height="11" viewBox="0 0 18 11" fill="#fff">
+          <rect x="0" y="7" width="3" height="4" rx="0.5"/>
+          <rect x="5" y="4" width="3" height="7" rx="0.5"/>
+          <rect x="10" y="1" width="3" height="10" rx="0.5"/>
+          <rect x="15" y="0" width="3" height="11" rx="0.5" opacity="0.5"/>
+        </svg>
+        <svg width="15" height="11" viewBox="0 0 16 11" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round">
+          <path d="M1 4 Q8 -2 15 4"/>
+          <path d="M3.5 6 Q8 2 12.5 6"/>
+          <circle cx="8" cy="9" r="0.9" fill="#fff" stroke="none"/>
+        </svg>
+        <span class="battery">
+          <span class="outer"><span class="fill"></span></span>
+          <span class="nub"></span>
+        </span>
+      </span>
+    </div>
+    <div class="screenshot"><img src="${imgSrc}"></div>
+  </div>
   <svg class="frame" viewBox="0 0 ${def.viewBoxW} ${def.viewBoxH}" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     ${def.svg}
   </svg>
