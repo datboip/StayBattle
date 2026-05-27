@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { rankListings, isDisqualified, type SortMode } from "@/lib/rank";
 import type { ListingWithStats, Place } from "@/lib/types";
+import type { AmenityTag } from "@/lib/airbnb-graphql";
 import type { TripDates } from "@/lib/trip";
 import type { Battle } from "@/lib/battle";
 import { ListingCard } from "./ListingCard";
@@ -63,12 +64,16 @@ export function ListingGrid({
   tripDates,
   battle,
   places = [],
+  requirements = [],
 }: {
   listings: ListingWithStats[];
   tripDates: TripDates;
   battle?: Battle | null;
   /** Pinned reference places used for the "Nearby" pill row on each card. */
   places?: Place[];
+  /** Battle-level must-have amenity tags. Each card renders a ✓ / "Missing"
+   *  row against these. Empty list = no row rendered. */
+  requirements?: AmenityTag[];
 }) {
   const router = useRouter();
   const { voter } = useVoter();
@@ -247,6 +252,7 @@ export function ListingGrid({
             tripDates={tripDates}
             battle={battle}
             places={places}
+            requirements={requirements}
           />
         ))}
         {ranked.length % 2 === 1 && (

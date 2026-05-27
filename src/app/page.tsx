@@ -8,6 +8,8 @@ import {
 import { toPublicBattle } from "@/lib/battle";
 import { listPastBattles } from "@/lib/past-battles-server";
 import { readVoterCookie } from "@/lib/auth-cookie";
+import { getBattleRequirements } from "@/lib/requirements-server";
+import { RequirementsPanel } from "@/components/RequirementsPanel";
 import { NameGate } from "@/components/NameGate";
 import { HeaderBar } from "@/components/HeaderBar";
 import { AddListingForm } from "@/components/AddListingForm";
@@ -48,6 +50,7 @@ export default async function Home() {
   const places = isMember ? fetchAllPlaces() : [];
   const participants =
     isMember && battle ? listParticipants(battle.id) : [];
+  const requirements = isMember ? getBattleRequirements() : [];
   const tripDates = battle
     ? { checkIn: battle.check_in, checkOut: battle.check_out }
     : getTripDates();
@@ -94,11 +97,16 @@ export default async function Home() {
             ) : (
               <>
                 <AvailabilityPanel listings={listings} battle={battle} />
+                <RequirementsPanel
+                  battle={battle}
+                  initialRequirements={requirements}
+                />
                 <ListingGrid
                   listings={listings}
                   tripDates={tripDates}
                   battle={battle}
                   places={places}
+                  requirements={requirements}
                 />
                 <MapSection
                   listings={listings}

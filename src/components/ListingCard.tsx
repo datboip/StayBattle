@@ -15,6 +15,8 @@ import type { ListingWithStats, Place } from "@/lib/types";
 import type { Battle } from "@/lib/battle";
 import { nearestPlaces, formatKm } from "@/lib/distance";
 import { resolvePlaceCategory } from "@/lib/place-categories";
+import { checkListingRequirements, AMENITY_LABELS } from "@/lib/requirements";
+import type { AmenityTag } from "@/lib/airbnb-graphql";
 
 function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -31,6 +33,7 @@ export function ListingCard({
   tripDates,
   battle,
   places = [],
+  requirements = [],
 }: {
   listing: ListingWithStats;
   rank: number;
@@ -39,6 +42,8 @@ export function ListingCard({
   /** Reference places used to render the "Nearby" pill row. Empty/omitted =
    *  no row rendered. Filtered to those with usable coordinates before use. */
   places?: Place[];
+  /** Battle-level must-have amenities. Empty/omitted = no must-haves row. */
+  requirements?: AmenityTag[];
 }) {
   const router = useRouter();
   const [isRemoving, startRemove] = useTransition();
@@ -158,6 +163,51 @@ export function ListingCard({
           }
         />
       </div>
+
+      {/* Must-haves checklist — green ✓ for each requirement the listing
+          satisfies, red ✕ + label for what's missing. Hidden when no
+          requirements are set on the battle. Helps the crew see at a
+          glance "this one doesn't have AC" without expanding the card. */}
+      {requirements.length > 0 && (() => {
+        const r = checkListingRequirements(listing.amenities, requirements);
+        return (
+          <div className="mx-3 mt-2 flex flex-wrap items-center gap-1">
+            <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-500">
+              Must-haves
+            </span>
+            {r.allMet ? (
+              <span
+                className="inline-flex items-center gap-1 rounded-sm border border-emerald-400/40 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-200"
+                title={`All ${requirements.length} requirement${requirements.length === 1 ? "" : "s"} met`}
+              >
+                <span aria-hidden="true">✓</span>
+                <span>All met</span>
+              </span>
+            ) : (
+              <>
+                {r.matched.length > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-sm border border-emerald-500/30 bg-emerald-500/5 px-1.5 py-0.5 font-mono text-[10px] text-emerald-300/80"
+                    title={r.matched.map((t) => AMENITY_LABELS[t]).join(", ")}
+                  >
+                    <span aria-hidden="true">✓</span>
+                    <span>{r.matched.length}/{requirements.length}</span>
+                  </span>
+                )}
+                <span
+                  className="inline-flex items-center gap-1 rounded-sm border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 font-mono text-[10px] text-rose-200"
+                  title={r.missing.map((t) => AMENITY_LABELS[t]).join(", ")}
+                >
+                  <span aria-hidden="true">✕</span>
+                  <span>
+                    Missing: {r.missing.map((t) => AMENITY_LABELS[t]).join(", ")}
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Nearby reference places — top 3 closest pinned places (any
           category) by straight-line distance. Helps the crew weigh

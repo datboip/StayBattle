@@ -45,6 +45,11 @@ import {
   setVoterCookie,
   clearVoterCookie,
 } from "@/lib/auth-cookie";
+import {
+  parseRequirements,
+  serializeRequirements,
+} from "@/lib/requirements";
+import { AMENITY_TAGS, type AmenityTag } from "@/lib/airbnb-graphql";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 export type SignInResult =
@@ -106,6 +111,41 @@ export async function signOut(): Promise<ActionResult> {
   revalidatePath("/");
   return { ok: true };
 }
+
+/**
+ * Organizer-only: set the must-have amenity list for the current
+ * battle. Stored as a JSON array in settings(key='battle_requirements').
+ * Empty array = no requirements = the cards stop rendering the
+ * must-haves row. Whitelist-filtered against AMENITY_TAGS so a
+ * client posting junk can't poison the settings row.
+ */
+export async function setBattleRequirements(
+  organizerId: string,
+  tags: string[],
+): Promise<ActionResult> {
+  const oid = cleanString(organizerId, VOTER_ID_MAX);
+  if (!oid) return { ok: false, error: "Missing organizer id" };
+  const battle = getCurrentBattle();
+  if (!battle) return { ok: false, error: "No active battle" };
+  if (battle.organizer_id !== oid) {
+    return { ok: false, error: "Only the organizer can edit requirements" };
+  }
+  if (!Array.isArray(tags)) {
+    return { ok: false, error: "Invalid requirements" };
+  }
+  const known = new Set<string>(AMENITY_TAGS);
+  const filtered = tags.filter(
+    (t): t is AmenityTag => typeof t === "string" && known.has(t),
+  );
+  const json = serializeRequirements(filtered);
+  db.prepare(
+    `insert into settings (key, value) values ('battle_requirements', ?)
+       on conflict(key) do update set value = excluded.value`,
+  ).run(json);
+  revalidatePath("/");
+  return { ok: true };
+}
+
 
 const RATE_LIMITED: ActionResult = {
   ok: false,

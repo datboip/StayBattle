@@ -30,17 +30,24 @@ Implementation sketch: add a `parseDeferredState(html)` helper next to
 
 ## Prebooking-setup checklist (the user-facing piece)
 
-Once we have amenities, build a per-battle "must-haves" list:
+**Hard requirements: DONE.** Organizer toggles must-have amenities from a
+chip picker (`RequirementsPanel`, collapsed by default). Each listing
+card renders a "Must-haves" row: ✓ "All met" when satisfied, otherwise
+"Missing: Wifi, Parking" in red. Backed by `settings(key='battle_requirements')`
+holding the JSON array; helpers + 12 tests live in `src/lib/requirements.ts`.
 
-- Organizer (or anyone with edit rights) sets requirements: `wifi`, `pool`,
-  `pet-friendly`, `EV charger`, `washer/dryer`, `parking`, `air-conditioning`,
-  etc. Free-text plus a curated picker so it stays consistent.
-- Each listing card shows a tiny green-check / red-x row against the
-  must-haves so the group sees at a glance which ones miss a requirement.
-- Optional "soft" preferences (e.g. "would be nice if it had a hot tub") that
-  affect score weighting but aren't disqualifying.
-- Mismatches don't hide the listing (people may still want to vote on it),
-  they just add a "missing: hot tub, EV charger" line.
+Still open:
+
+- **Soft preferences** (would-be-nice tags) that nudge the score
+  without disqualifying. Schema is forward-compatible — the stored
+  JSON could carry `{ tag, hard: boolean }` instead of plain strings
+  without a migration.
+- **Free-text custom requirements** alongside the curated picker. Right
+  now you're limited to the 23 AMENITY_TAGS the scraper recognizes.
+- **Score weighting**: today must-haves are purely informational. A
+  small score penalty for each missing must-have would let the
+  ranking surface naturally fall in line with the organizer's
+  must-haves.
 
 ## Multi-source URL support — be a real aggregator
 
