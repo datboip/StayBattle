@@ -42,6 +42,27 @@ async function makePage(browser, { viewport = "desktop", signedIn = true } = {})
     viewport: VIEWPORTS[viewport],
     colorScheme: "dark",
   });
+  // Hide the Next.js dev-mode badge ("N" floating in the corner) from
+  // every screenshot. addInitScript runs on every new document in the
+  // context — including after each capture-block's `page.goto(...)` —
+  // which is what makes this survive the navigations that earlier
+  // page.addStyleTag attempts lost. The handler injects a <style> tag
+  // on DOMContentLoaded so the rule is in place before paint, and uses
+  // a data attribute to avoid double-inserting on HMR navigations.
+  await ctx.addInitScript(() => {
+    const inject = () => {
+      if (!document.head) return;
+      if (document.head.querySelector('style[data-cap-hide-nextjs]')) return;
+      const s = document.createElement('style');
+      s.setAttribute('data-cap-hide-nextjs', '');
+      s.textContent = 'nextjs-portal{display:none!important}';
+      document.head.appendChild(s);
+    };
+    inject();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', inject);
+    }
+  });
   // Server-side gate (post 2026-05-27 privacy audit) reads the voter
   // identity from a cookie, not localStorage — so the cookie has to be
   // primed BEFORE the first navigation or SSR will treat the visitor
@@ -61,22 +82,10 @@ async function makePage(browser, { viewport = "desktop", signedIn = true } = {})
     ]);
   }
   const page = await ctx.newPage();
-  // Hide the Next.js dev-mode badge ("N" floating in the corner of
-  // every dev-mode page) from every screenshot. The dev indicator
-  // renders inside a custom <nextjs-portal> element parked as a
-  // top-level child of <body>; hiding it from the outside CSS works
-  // because the element itself is in the light DOM. No-op on
-  // `next start` production builds, where the element never mounts.
-  await page.addStyleTag({
-    content: `nextjs-portal { display: none !important; }`,
-  });
   // Pre-set localStorage flags BEFORE any page UI renders. This
   // includes dismissing the demo-mode modal so it doesn't blanket
   // every screenshot.
   await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
-  await page.addStyleTag({
-    content: `nextjs-portal { display: none !important; }`,
-  });
   await page.evaluate(({ id, name, signedIn }) => {
     // Dismiss the demo-mode disclaimer modal in every captured shot
     window.localStorage.setItem("staybattle:demo-modal-dismissed:v1", "1");
