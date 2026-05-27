@@ -22,7 +22,7 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 - Vitest test setup with unit tests for `scrape`, `geocode`, and `rank`.
 - Dockerfile + `.dockerignore` for one-command self-hosting.
 - Image lightbox: clicking a listing photo opens a full-screen viewer with arrow-key nav.
-- Keyboard shortcuts: `/` focuses the URL input, `←`/`→` scroll the roster, `1`–`5` rate in review mode.
+- Keyboard shortcuts in review mode: `1`–`5` set the rating directly, `↑`/`U` = 5 (Love), `↓`/`D` = 1 (Nope), `→`/space = next, `←` = previous, `Esc` = exit.
 
 ## [0.1.0] — initial
 

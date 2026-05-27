@@ -190,7 +190,7 @@ CI runs typecheck, tests, and build on every push and PR (`.github/workflows/ci.
 StayBattle is built for small private groups:
 
 - No analytics, no tracking pixels, no third-party JavaScript loaded into the page.
-- No cookies. Identity lives in your browser's localStorage.
+- **One cookie**: a same-site `staybattle_voter` cookie set on sign-in so the server-side gate can tell whether to render battle data (added 2026-05-27 to close a leak where anonymous visitors could `curl` the page and get the invite code + every comment). Mirrored to `localStorage` for the client UI. Cleared on sign-out. Not third-party. Not analytics.
 - No telemetry. Next.js telemetry is disabled in the Dockerfile.
 - All data is in a single SQLite file. Delete it to nuke everything.
 

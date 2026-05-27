@@ -256,10 +256,17 @@ const tx = db.transaction(() => {
       tier: i + 1,
     }));
   }
+  // Note: these are stored as YYYY-MM-01 (month-rounded) on purpose —
+  // archiveCurrentBattle in past-battles-server.ts scrubs day-level
+  // detail at archive time. The trophy case UI displays only month/year
+  // anyway, so matching that format here keeps the data shape consistent
+  // with a real archive snapshot. Earlier the values were same-day
+  // YYYY-MM-01 to YYYY-MM-01 — readable as "zero-length trip" in any
+  // downstream code; fixed to span sensible month ranges.
   const pastBattles = [
     {
       name: "Lakehouse Long Weekend",
-      check_in: "2030-03-01", check_out: "2030-03-01",
+      check_in: "2030-03-01", check_out: "2030-04-01",
       organizer: "Alex",
       participants: ["Alex", "Sam", "Jordan", "Riley", "Casey"],
       listings: 18, votes: 47, comments: 12,
@@ -268,7 +275,7 @@ const tx = db.transaction(() => {
     },
     {
       name: "Cabin Crew · Spring '29",
-      check_in: "2029-05-01", check_out: "2029-05-01",
+      check_in: "2029-05-01", check_out: "2029-06-01",
       organizer: "Sam",
       participants: ["Sam", "Jordan", "Casey", "Morgan"],
       listings: 12, votes: 31, comments: 9,

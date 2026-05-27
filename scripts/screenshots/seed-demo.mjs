@@ -272,9 +272,11 @@ listings.slice(0, DEMO_COMMENTS.length).forEach((listing, i) => {
 });
 
 // Add some recognisable Orlando reference points so the map shot
-// shows BOTH listings (blue pins) and reference places (orange dots).
-// The real DB already had SeaWorld + Silver Lake; these supplement
-// with theme parks people instantly recognise.
+// shows BOTH listings (status-colored teardrops: teal/rose/amber)
+// and reference places (category-colored dots: theme-park, restaurant,
+// bar, beach, museum, airport, grocery, nature, shopping). The real
+// DB already had SeaWorld + Silver Lake; these supplement with the
+// places people instantly recognise.
 console.log("Inserting reference places…");
 const refPlaces = [
   { name: "Magic Kingdom",               lat: 28.4177, lon: -81.5812, by: "Alex",   kind: "theme-park" },

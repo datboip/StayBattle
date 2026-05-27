@@ -149,9 +149,10 @@ function YouCanDo({
         <p className="font-semibold text-zinc-100">As a crew member:</p>
         <ul className="ml-4 list-disc space-y-1">
           <li>
-            <strong className="text-emerald-300">Upvote</strong> (▲) or{" "}
-            <strong className="text-rose-300">downvote</strong> (▼) any
-            listing. Click again to clear your vote.
+            <strong className="text-zinc-100">Rate each listing 1–5</strong>{" "}
+            on a slider (Nope · Meh · OK · Like · Love). Drag and release
+            to set; drag to "—" to clear. You can&apos;t rate listings
+            you submitted yourself — those show "Your submission" instead.
           </li>
           <li>
             <strong className="text-zinc-100">Trash talk</strong> — open
@@ -403,10 +404,13 @@ export function HelpButton({
                 </p>
                 <p>
                   <strong className="text-zinc-100">2. Battle</strong> —
-                  All listings reveal at once. Vote up or down. Leave
-                  comments. Use the one-at-a-time review mode if you want
-                  a focused walk-through. Each submitter&apos;s hype shows
-                  up pinned at the top of their listing&apos;s comments.
+                  All listings reveal at once. Rate each one 1–5 on the
+                  slider (Nope · Meh · OK · Like · Love). Leave comments.
+                  Use the one-at-a-time review mode if you want a focused
+                  walk-through. Each submitter&apos;s hype shows up pinned
+                  at the top of their listing&apos;s comments. Submitters
+                  can&apos;t rate their own listings — the slider shows
+                  "Your submission" instead.
                 </p>
                 <p>
                   <strong className="text-zinc-100">3. Close</strong> —
@@ -420,29 +424,44 @@ export function HelpButton({
 
               <Section title="Voting & review mode">
                 <p>
-                  Each card has an{" "}
-                  <strong className="text-emerald-300">upvote</strong>{" "}
-                  (▲) and a{" "}
-                  <strong className="text-rose-300">downvote</strong> (▼).
-                  Click again to clear your vote. Your votes show under
-                  the card so the crew can see who&apos;s on what side.
+                  Each card has a{" "}
+                  <strong className="text-zinc-100">1–5 rating slider</strong>{" "}
+                  (Nope · Meh · OK · Like · Love). Drag and release to
+                  set your rating; drag to "—" on the far-left to clear.
+                  The card&apos;s headline score is the mean of all
+                  ratings (1.0–5.0). Your rating shows under the card so
+                  the crew can see who&apos;s on what side. Listings you
+                  submitted yourself can&apos;t be rated — the slider is
+                  replaced by a "Your submission" note.
                 </p>
                 <p>
                   <strong className="text-zinc-100">Review mode</strong>{" "}
                   is a swipe-through one-card-at-a-time view, ordered to
                   show you cards you haven&apos;t weighed in on first.
-                  Keyboard shortcuts: ↑/U upvote, ↓/D downvote, →/space
-                  next, ← previous, Esc exit.
+                  Keyboard shortcuts: <strong>1–5</strong> set the rating
+                  directly, <strong>↑</strong> / <strong>U</strong> = 5
+                  (Love), <strong>↓</strong> / <strong>D</strong> = 1
+                  (Nope), <strong>→</strong> / space = next,{" "}
+                  <strong>←</strong> = previous, <strong>Esc</strong> = exit.
                 </p>
                 <p>
                   Sort the grid by{" "}
-                  <em className="text-zinc-200">Score</em> (with a
-                  fresh-listing boost),{" "}
+                  <em className="text-zinc-200">Score</em> (mean rating
+                  with a small fresh-listing boost),{" "}
                   <em className="text-zinc-200">Most votes</em> (most
                   engagement first), or{" "}
                   <em className="text-zinc-200">Newest</em>. Hide
                   &ldquo;booked&rdquo; listings entirely with the toggle
-                  next to the sort.
+                  next to the sort. The column toggle (Auto / 1 / 2 / 3)
+                  lets you change card density, and the BOOKED stamp
+                  covers any listing whose dates aren&apos;t available.
+                </p>
+                <p>
+                  Organizers can set "<strong>must-haves</strong>" for
+                  the battle (wifi, pool, parking, kitchen, etc.) from
+                  the panel above the roster. Every card then shows a
+                  ✓ All-met badge or a "Missing: X" line, so the crew
+                  can spot dealbreakers without expanding the card.
                 </p>
               </Section>
 
@@ -482,15 +501,26 @@ export function HelpButton({
 
               <Section title="The map">
                 <p>
-                  Every listing pins to the map by its lat/lng. Blue pins
-                  are listings, amber dots are{" "}
-                  <strong className="text-amber-300">reference places</strong>{" "}
-                  — landmarks anyone in the crew can add (resorts, theme
-                  parks, dinner spots) to give context. Pin a place by
-                  typing a name (e.g.{" "}
-                  <em className="text-zinc-200">&ldquo;SeaWorld
-                  Orlando&rdquo;</em>), an address, or pasting an
-                  Apple/Google Maps share link.
+                  Every listing pins to the map by its lat/lng as a{" "}
+                  <strong className="text-zinc-100">status-colored
+                  teardrop</strong>: teal = available, rose with ✕ =
+                  booked, amber = unknown. Reference places (theme
+                  parks, restaurants, the airport, your favorite
+                  grocery) show as{" "}
+                  <strong className="text-zinc-100">category-colored
+                  dots</strong> — each category gets its own color +
+                  emoji, and filter chips at the bottom toggle them on
+                  and off. Anyone in the crew can drop one: pick the
+                  category, click anywhere on the map (no geocoding
+                  needed), or paste an address into the form.
+                </p>
+                <p>
+                  Each listing card also shows a{" "}
+                  <strong className="text-zinc-100">"Nearby" pill row</strong>{" "}
+                  with real drive times to the 3 closest pinned places
+                  ("🎢 Magic Kingdom 12min · ✈ MCO 18min · 🛒 Publix
+                  4min"), routed via OSRM — falls back to straight-line
+                  km if routing is unreachable.
                 </p>
                 <p>
                   Tiles come from{" "}
