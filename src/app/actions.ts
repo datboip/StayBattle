@@ -415,6 +415,59 @@ export async function addPlace(
   return { ok: true };
 }
 
+/**
+ * Add a place at known coordinates — skips geocoding entirely. Used by the
+ * map's "drop a pin" mode where the user clicks the map and we already have
+ * lat/lng. addPlace() above handles the search-by-name path.
+ */
+export async function addPlaceAtCoords(
+  name: string,
+  url: string | null,
+  lat: number,
+  lng: number,
+  addedByName: string,
+): Promise<ActionResult> {
+  const cleanName = cleanString(name, 120);
+  if (!cleanName) return { ok: false, error: "Place needs a name" };
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lng) > 180
+  ) {
+    return { ok: false, error: "Invalid coordinates" };
+  }
+
+  const addedBy = cleanString(addedByName, NAME_MAX);
+  if (!consume(`place:${addedBy || "anon"}`, LIMITS.place)) return RATE_LIMITED;
+
+  // Same URL validation as addPlace — only accept real http(s) URLs.
+  let cleanUrl: string | null = null;
+  if (url) {
+    try {
+      const u = new URL(url.trim());
+      if (u.protocol === "http:" || u.protocol === "https:") {
+        cleanUrl = u.toString();
+      }
+    } catch {
+      // Reject malformed URLs silently — name + coords still get saved.
+    }
+  }
+
+  if (placeAlreadyExists({ url: cleanUrl, lat, lng })) {
+    revalidatePath("/");
+    return { ok: true };
+  }
+
+  db.prepare(
+    `insert into places (id, name, url, latitude, longitude, kind, added_by_name)
+     values (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(newId(), cleanName, cleanUrl, lat, lng, "reference", addedBy || null);
+
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function removePlace(placeId: string): Promise<ActionResult> {
   const id = cleanString(placeId, 64);
   if (!id) return { ok: false, error: "Missing id" };
