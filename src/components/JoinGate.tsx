@@ -4,9 +4,13 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { joinBattle } from "@/app/actions";
 import { useVoter } from "@/lib/voter";
-import { normalizeInviteCode, type Battle } from "@/lib/battle";
+import {
+  normalizeInviteCode,
+  type Battle,
+  type PublicBattle,
+} from "@/lib/battle";
 
-export function JoinGate({ battle }: { battle: Battle }) {
+export function JoinGate({ battle }: { battle: Battle | PublicBattle }) {
   const router = useRouter();
   const { voter } = useVoter();
   const [raw, setRaw] = useState("");

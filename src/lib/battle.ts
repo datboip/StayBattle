@@ -17,6 +17,32 @@ export type Battle = {
   started_at: string | null;
 };
 
+/**
+ * Public-safe subset of a Battle — strips `invite_code` (a sharable
+ * secret) and `organizer_id` (a UUID enumerable across pages). Used
+ * for the pre-join render path where anonymous visitors should see
+ * the battle name + organizer's display name but nothing useful for
+ * impersonation or invite-code recovery.
+ */
+export type PublicBattle = Omit<Battle, "invite_code" | "organizer_id">;
+
+export function toPublicBattle(b: Battle): PublicBattle {
+  // Explicit destructure rather than rest-spread so the shape is
+  // obvious at the call site and tsc surfaces accidental field
+  // additions to Battle.
+  return {
+    id: b.id,
+    name: b.name,
+    organizer_name: b.organizer_name,
+    check_in: b.check_in,
+    check_out: b.check_out,
+    submission_deadline: b.submission_deadline,
+    phase: b.phase,
+    created_at: b.created_at,
+    started_at: b.started_at,
+  };
+}
+
 export type Participant = {
   battle_id: string;
   voter_id: string;

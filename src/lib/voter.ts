@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { signOut as signOutAction } from "@/app/actions";
 
 const AUTH_KEY = "staybattle:auth:v2";
 // Legacy keys from before name+PIN sign-in landed.
@@ -62,7 +63,14 @@ export function useVoter(): {
     setVoterState(v);
   };
 
-  const signOut = () => setVoter(null);
+  const signOut = () => {
+    setVoter(null);
+    // Fire-and-forget the server cookie clear; UI doesn't wait. Worst
+    // case (network blip) the cookie stays a tiny bit but the next page
+    // load's gate logic still rejects since localStorage is cleared
+    // and the gate trusts isParticipant on the server anyway.
+    void signOutAction();
+  };
 
   return { voter, ready, setVoter, signOut };
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useVoter } from "@/lib/voter";
-import type { Battle } from "@/lib/battle";
+import type { Battle, PublicBattle } from "@/lib/battle";
 
 function QuestionIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -261,10 +261,18 @@ function Section({ title, defaultOpen = false, children }: SectionProps) {
   );
 }
 
-export function HelpButton({ battle }: { battle?: Battle | null }) {
+export function HelpButton({
+  battle,
+}: {
+  /** Accept the public-safe subset too — pre-gate renders hand that one
+   *  down. The organizer check below narrows on the runtime field. */
+  battle?: Battle | PublicBattle | null;
+}) {
   const [open, setOpen] = useState(false);
   const { voter } = useVoter();
-  const isOrganizer = !!(voter && battle && voter.id === battle.organizer_id);
+  const isOrganizer = !!(
+    voter && battle && "organizer_id" in battle && voter.id === battle.organizer_id
+  );
   const phase = battle?.phase ?? null;
 
   useEffect(() => {

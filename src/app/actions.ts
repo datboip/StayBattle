@@ -41,6 +41,10 @@ import {
 import { isKnownPlaceCategoryId } from "@/lib/place-categories";
 import { haversineKm } from "@/lib/distance";
 import { normalizePlaceName, mergeContributor } from "@/lib/place-dedup";
+import {
+  setVoterCookie,
+  clearVoterCookie,
+} from "@/lib/auth-cookie";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 export type SignInResult =
@@ -77,6 +81,10 @@ export async function signIn(
     if (!verifyPin(pin, existing.pin_hash)) {
       return { ok: false, error: "Wrong PIN for that name." };
     }
+    // Mirror the voter id into a same-site cookie so the server can gate
+    // SSR access. The cookie is the source of truth on the server; the
+    // client localStorage handles UI-side state.
+    await setVoterCookie({ id: existing.id, name: existing.name });
     return { ok: true, id: existing.id, name: existing.name, created: false };
   }
 
@@ -84,7 +92,19 @@ export async function signIn(
   db.prepare(
     `insert into voters (id, name, name_key, pin_hash) values (?, ?, ?, ?)`,
   ).run(id, name, nameKey, hashPin(pin));
+  await setVoterCookie({ id, name });
   return { ok: true, id, name, created: true };
+}
+
+/**
+ * Clear the server-side voter cookie. Called by the client `signOut`
+ * flow alongside its localStorage cleanup so the server-side gate also
+ * forgets who you are.
+ */
+export async function signOut(): Promise<ActionResult> {
+  await clearVoterCookie();
+  revalidatePath("/");
+  return { ok: true };
 }
 
 const RATE_LIMITED: ActionResult = {

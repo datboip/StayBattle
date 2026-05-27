@@ -1,7 +1,13 @@
 import { fetchAllListings, fetchAllPlaces } from "@/lib/data";
 import { getTripDates } from "@/lib/trip-server";
-import { getCurrentBattle, listParticipants } from "@/lib/battle-server";
+import {
+  getCurrentBattle,
+  listParticipants,
+  isParticipant,
+} from "@/lib/battle-server";
+import { toPublicBattle } from "@/lib/battle";
 import { listPastBattles } from "@/lib/past-battles-server";
+import { readVoterCookie } from "@/lib/auth-cookie";
 import { NameGate } from "@/components/NameGate";
 import { HeaderBar } from "@/components/HeaderBar";
 import { AddListingForm } from "@/components/AddListingForm";
@@ -13,7 +19,7 @@ import { FlashbangBanner } from "@/components/FlashbangBanner";
 import { SubmissionPhase } from "@/components/SubmissionPhase";
 import { InviteCodePanel } from "@/components/InviteCodePanel";
 import { AvailabilityPanel } from "@/components/AvailabilityPanel";
-import { JoinGateWrapper } from "@/components/JoinGateWrapper";
+import { JoinGate } from "@/components/JoinGate";
 import { TrophyCase } from "@/components/TrophyCase";
 import { DemoModal } from "@/components/DemoModal";
 
@@ -22,27 +28,61 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const demoMode = process.env.STAYBATTLE_DEMO_MODE === "true";
   const battle = getCurrentBattle();
-  const listings = fetchAllListings();
-  const places = fetchAllPlaces();
+
+  // Server-side gate: only members of the current battle see listings /
+  // participants / comments. Anonymous visitors (no cookie) and visitors
+  // signed in as someone outside the battle get a stripped page that
+  // exposes only the battle name + JoinGate prompt + past-battles
+  // social proof.
+  //
+  // PRIVACY: this is the closure for HIGH#1 from the audit
+  // (2026-05-27) — the previous JoinGateWrapper was CLIENT-only, so
+  // `curl /` returned the entire battle payload (invite code, lat/lng,
+  // every comment body) regardless of who was visiting.
+  const cookieVoter = await readVoterCookie();
+  const isMember = !!(
+    battle && cookieVoter && isParticipant(battle.id, cookieVoter.id)
+  );
+
+  const listings = isMember ? fetchAllListings() : [];
+  const places = isMember ? fetchAllPlaces() : [];
+  const participants =
+    isMember && battle ? listParticipants(battle.id) : [];
   const tripDates = battle
     ? { checkIn: battle.check_in, checkOut: battle.check_out }
     : getTripDates();
-  const participants = battle ? listParticipants(battle.id) : [];
+  // past_battles already stores only month-rounded dates + no exact
+  // lat/lng in podium JSON (see past-battles-server.ts:archiveCurrentBattle).
+  // Treated as social-proof content, so we render it pre-gate.
   const pastBattles = listPastBattles();
+
+  // Strip `invite_code` and `organizer_id` from anything we render
+  // pre-gate. Anonymous SSR'd HTML should never contain the invite
+  // code (sharable secret) or the organizer's UUID (impersonation
+  // primer). Members get the full battle object since they need
+  // invite_code for the InviteCodePanel and organizer_id for the
+  // organizer-only controls.
+  const publicBattle = battle ? toPublicBattle(battle) : null;
+  const headerBattle = isMember ? battle : publicBattle;
 
   return (
     <NameGate>
       <DemoModal enabled={demoMode} />
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
-        <HeaderBar battle={battle} />
+        <HeaderBar battle={headerBattle} />
 
         {!battle ? (
           <>
             <BattleSetup />
             <TrophyCase past={pastBattles} />
           </>
+        ) : !isMember ? (
+          <>
+            <JoinGate battle={publicBattle!} />
+            <TrophyCase past={pastBattles} />
+          </>
         ) : (
-          <JoinGateWrapper battle={battle} participants={participants}>
+          <>
             <BattleHeader battle={battle} />
             <FlashbangBanner battle={battle} />
             <InviteCodePanel battle={battle} participants={participants} />
@@ -68,7 +108,7 @@ export default async function Home() {
               </>
             )}
             <TrophyCase past={pastBattles} />
-          </JoinGateWrapper>
+          </>
         )}
 
         <footer className="mt-auto flex flex-col items-center gap-2 pt-8 text-center text-xs text-zinc-400">

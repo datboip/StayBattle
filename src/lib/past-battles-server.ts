@@ -133,12 +133,18 @@ export function archiveCurrentBattle(battle: {
     }
     if (podium.length >= MAX_ENTRIES) break;
     currentScore = l.score;
+    // PRIVACY: drop the Airbnb URL on archive. TrophyCase only needs
+    // title + photo + city to convey "we picked this one"; keeping the
+    // specific re-bookable URL forever turns the trophy case into a
+    // pinpoint marker of which rentals the crew has been to. Audit
+    // 2026-05-27. Existing rows in past_battles keep their URLs (no
+    // backfill migration); only newly-archived battles are scrubbed.
     podium.push({
       title: l.title,
       short_title: shortTitle(l.title) || null,
       location: l.location,
       image_url: l.image_url,
-      url: l.url,
+      url: "",
       score: l.score,
       vote_count: l.vote_count,
       added_by_name: l.added_by_name,

@@ -311,12 +311,15 @@ function podiumFrom(offset) {
     { score: 4.3, vote_count: 5 },
     { score: 3.7, vote_count: 4 },
   ];
+  // Match archiveCurrentBattle: scrubbed URL so the demo's past-battles
+  // mirror what a real archive would persist (no re-bookable Airbnb URL
+  // retained forever — privacy audit 2026-05-27).
   return three.map((l, i) => ({
     title: l.title ?? `Cabin ${i + 1}`,
     short_title: (l.title ?? `Cabin ${i + 1}`).slice(0, 40),
     location: l.location,
     image_url: l.image_url,
-    url: l.url,
+    url: "",
     score: tierStats[i].score,
     vote_count: tierStats[i].vote_count,
     added_by_name: voterEntries[i % voterEntries.length][0],

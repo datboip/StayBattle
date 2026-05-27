@@ -5,9 +5,15 @@ import { useVoter } from "@/lib/voter";
 import { confirmDialog } from "./Modal";
 import { ThemeToggle } from "./ThemeToggle";
 import { HelpButton } from "./HelpModal";
-import type { Battle } from "@/lib/battle";
+import type { Battle, PublicBattle } from "@/lib/battle";
 
-export function HeaderBar({ battle }: { battle?: Battle | null }) {
+export function HeaderBar({
+  battle,
+}: {
+  /** Accept the public-safe subset too — pre-gate renders pass that one
+   *  so `invite_code` / `organizer_id` never leak into the client. */
+  battle?: Battle | PublicBattle | null;
+}) {
   const { voter, signOut } = useVoter();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -84,7 +90,7 @@ export function HeaderBar({ battle }: { battle?: Battle | null }) {
                 </p>
               </div>
 
-              {battle && battle.organizer_id === voter.id && (
+              {battle && "organizer_id" in battle && battle.organizer_id === voter.id && (
                 <div className="border-t border-zinc-800 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   Organizing
                   <p
