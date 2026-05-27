@@ -15,14 +15,25 @@ export function JoinGate({ battle }: { battle: Battle }) {
   const inputId = useId();
   const autoSubmittedRef = useRef(false);
 
-  // Read `?invite=` from the URL and pre-fill so an invite-link recipient
-  // doesn't have to type anything. Also accepts a fallback in sessionStorage
-  // for the case where someone clicked the link, did the NameGate flow, and
-  // we want the code to survive across the sign-in step.
+  // Read the invite code from the URL fragment (`#invite=…`) and pre-fill
+  // so a link recipient doesn't have to type anything. We use the fragment
+  // (not a query string) because fragments stay client-side — they never
+  // reach nginx/cloudflared/Next SSR access logs. Legacy `?invite=` links
+  // are still honored so old screenshots / Slack messages don't break.
+  // sessionStorage is the survive-across-sign-in fallback.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    let code = params.get("invite") ?? "";
+    let code = "";
+    if (window.location.hash) {
+      const hashParams = new URLSearchParams(
+        window.location.hash.replace(/^#/, ""),
+      );
+      code = hashParams.get("invite") ?? "";
+    }
+    if (!code) {
+      const params = new URLSearchParams(window.location.search);
+      code = params.get("invite") ?? "";
+    }
     if (!code) {
       try {
         code = sessionStorage.getItem("staybattle:invite") ?? "";
@@ -49,14 +60,27 @@ export function JoinGate({ battle }: { battle: Battle }) {
       } else {
         // Clear the invite trace from the URL + sessionStorage so a refresh
         // doesn't re-trigger and the address bar doesn't leak the code.
+        // Strip BOTH the fragment (new format) and the query param (legacy).
         try {
           sessionStorage.removeItem("staybattle:invite");
         } catch {}
         if (typeof window !== "undefined") {
           const url = new URL(window.location.href);
+          let dirty = false;
           if (url.searchParams.has("invite")) {
             url.searchParams.delete("invite");
-            window.history.replaceState({}, "", url.pathname + url.search);
+            dirty = true;
+          }
+          if (url.hash.includes("invite=")) {
+            url.hash = "";
+            dirty = true;
+          }
+          if (dirty) {
+            window.history.replaceState(
+              {},
+              "",
+              url.pathname + url.search + url.hash,
+            );
           }
         }
         router.refresh();

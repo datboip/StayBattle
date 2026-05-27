@@ -18,6 +18,22 @@ type Row = {
   created_at: string;
 };
 
+/**
+ * Round an ISO date string to the first of its month — "2026-06-26" →
+ * "2026-06-01". Used at archive time to scrub day-level trip dates from
+ * the long-lived past_battles snapshot (see archiveCurrentBattle). The
+ * trophy-case UI already displays only month/year; this just ensures the
+ * raw stored value matches what's shown so a view-source doesn't recover
+ * the exact trip window.
+ */
+function monthSnapshot(iso: string | null): string | null {
+  if (!iso) return null;
+  // Accept full ISO timestamps and YYYY-MM-DD alike — slice covers both.
+  const ymd = iso.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return iso; // bail rather than mangle weird input
+  return `${ymd.slice(0, 7)}-01`;
+}
+
 function rowToPast(row: Row): PastBattle {
   let participants: string[] = [];
   let podium: PodiumEntry[] = [];
@@ -148,6 +164,17 @@ export function archiveCurrentBattle(battle: {
     .all(battle.id) as { voter_name: string }[];
   const participantNames = participantRows.map((p) => p.voter_name);
 
+  // Scrub exact dates → YYYY-MM-01 on archive so the long-lived trophy
+  // case doesn't preserve "the house was empty 2026-06-26 through
+  // 2026-07-03." TrophyCase already DISPLAYS only month/year, but the
+  // raw ISO strings used to sit in past_battles.* — anyone view-sourcing
+  // the page (or pulling the JSON later) recovered them. Privacy audit
+  // 2026-05-27. The month-level snapshot keeps "we went in March 2030"
+  // intact for the "remember the trip" intent and drops the day-level
+  // detail used in the trip-window doxxing threat.
+  const checkInArchived = monthSnapshot(battle.check_in);
+  const checkOutArchived = monthSnapshot(battle.check_out);
+
   db.prepare(
     `insert into past_battles (
         id, name, check_in, check_out, organizer_name,
@@ -158,8 +185,8 @@ export function archiveCurrentBattle(battle: {
   ).run(
     battle.id,
     battle.name,
-    battle.check_in,
-    battle.check_out,
+    checkInArchived,
+    checkOutArchived,
     battle.organizer_name,
     JSON.stringify(participantNames),
     JSON.stringify(podium),

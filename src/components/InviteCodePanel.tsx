@@ -59,12 +59,18 @@ export function InviteCodePanel({
   // The invite link uses the current browser's URL as the host so a self-hosted
   // instance gets its own working link (LAN IP, tailscale name, ngrok URL,
   // public domain — whatever the organizer is currently on).
+  //
+  // PRIVACY: the code rides in the URL FRAGMENT (`#invite=…`), not a query
+  // param. Fragments never leave the browser — nginx, cloudflared, Next.js
+  // SSR logs, and CDN access logs never see them. Switching from `?invite=`
+  // closed a real leak where invite codes were ending up in disk-rotated
+  // server logs (audit 2026-05-27).
   const buildInviteLink = (): string => {
-    if (typeof window === "undefined") return `?invite=${battle.invite_code}`;
+    if (typeof window === "undefined") return `#invite=${battle.invite_code}`;
     const u = new URL(window.location.href);
     u.pathname = "/";
-    u.hash = "";
-    u.search = `?invite=${battle.invite_code}`;
+    u.search = "";
+    u.hash = `invite=${battle.invite_code}`;
     return u.toString();
   };
 
