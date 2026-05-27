@@ -204,6 +204,49 @@ Enable + restore-drill instructions live in `staybattle-site/infra/DEPLOY.md`.
   box, `STAYBATTLE_DB_DIR=/tmp npm run dev`, verify schema + UI. Drill
   steps in DEPLOY.md.
 
+## Public-instance hardening (small-scale, not full SaaS)
+
+**Hardening landed 2026-05-27** in case `app.staybattle.com` keeps
+seeing random visitors before we're ready to flip to a real product:
+
+- ~~**Per-IP rate limits at nginx**~~ — **DONE.** `limit_req_zone` for a
+  general bucket (60r/m, burst 30) plus a tighter write bucket
+  (20r/m, burst 10) layered on `/`. `$binary_remote_addr` resolves to
+  the real visitor IP via `CF-Connecting-IP` so the limits actually
+  apply to humans, not Cloudflare edges.
+- ~~**Operator URL takedown tool**~~ — **DONE.** `scripts/admin/remove-url.mjs`
+  deletes the listing (cascades votes + comments) and adds the URL to
+  `blocked_urls`. `addListing` refuses any future re-add with the
+  takedown reason.
+- ~~**DMCA / host-opt-out procedure**~~ — **DONE.** Documented in
+  `SECURITY.md` § "Takedown requests" with the email channel, the
+  required DMCA elements, the implementation tool, and the
+  per-instance vs. fork distinction.
+- ~~**Terms of service**~~ — **DONE.** `TOS.md` ships a plain-language
+  version + a formal restatement. Not lawyer-reviewed; flagged as
+  needing review before going commercial-scale.
+- ~~**Privacy policy**~~ — **DONE.** `PRIVACY.md` (see the privacy
+  audit work).
+
+**Still open** (becomes load-bearing only if `app.staybattle.com`
+graduates from "personal demo for friends" to "people we don't know
+sign up and use it"):
+
+- **Multi-tenant** — current schema is one battle per server. A real
+  free-SaaS shape would require isolating battles per organizer
+  account, signup with email verification, and battle-discovery
+  controls. Substantial schema rework; defer until the demand exists.
+- **Signup friction** — anyone claims any name with a 4–6 digit PIN.
+  Rate-limited per name (5/min) but a botnet across IPs sidesteps it.
+  Add captcha or email verification when bot traffic shows up.
+- **Bandwidth budget** — each pasted URL is a full HTML scrape from
+  Airbnb. At scale, dedup scrapes across battles (multiple battles
+  with the same URL hit Airbnb only once).
+- **Moderation surface** — comment delete is per-author / per-organizer
+  today; an instance-operator inbox + flag/ban workflow needed for
+  public traffic.
+- **Lawyer review of TOS.md + PRIVACY.md** before anything commercial.
+
 ## Other ideas
 
 - **Price snapshot on demand** — a one-shot "fetch a price" button (organizer

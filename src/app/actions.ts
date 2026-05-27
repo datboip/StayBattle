@@ -179,6 +179,25 @@ export async function addListing(
     return { ok: false, error: "Only Airbnb /rooms/<id> URLs are supported" };
   }
 
+  // Operator blocklist: URLs removed via the takedown tool refuse
+  // re-add forever, no matter who submits them. Used for DMCA /
+  // host opt-outs / any "this listing should not be on the platform"
+  // signal. Lookup by canonical URL so a paste of any equivalent
+  // form (with/without query, /rooms/N vs /rooms/listing-type/N) all
+  // match the same row after canonicalization.
+  const isBlocked = db
+    .prepare("select reason from blocked_urls where url = ?")
+    .get(canonical) as { reason: string | null } | undefined;
+  if (isBlocked) {
+    return {
+      ok: false,
+      error:
+        "This listing was removed from the platform" +
+        (isBlocked.reason ? ` (${isBlocked.reason})` : "") +
+        ".",
+    };
+  }
+
   const existing = db
     .prepare("select id from listings where url = ?")
     .get(canonical);

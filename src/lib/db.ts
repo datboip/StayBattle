@@ -107,6 +107,18 @@ const SCHEMA_STATEMENTS = [
     created_at text not null
   )`,
   `create index if not exists past_battles_closed_idx on past_battles(closed_at desc)`,
+  // Operator-managed blocklist. Listings whose URL ends up here are
+  // deleted from `listings` (cascading votes + comments) and refused on
+  // re-add via `addListing`. Used for DMCA takedowns, host opt-outs,
+  // and any URL the instance operator doesn't want on the platform.
+  // The URL is the natural primary key — same canonical form
+  // `validateAirbnbUrl()` produces, so a copy-paste of an already-blocked
+  // URL matches without any normalization at the call site.
+  `create table if not exists blocked_urls (
+    url text primary key,
+    reason text,
+    blocked_at text not null default (datetime('now'))
+  )`,
 ];
 
 // Idempotent migrations for old databases that predate added columns.

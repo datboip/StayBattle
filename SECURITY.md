@@ -36,6 +36,88 @@ If you find a security issue:
 
 We'll triage and respond within a few days. There's no bug bounty — this is a personal project.
 
+## Takedown requests (DMCA, host opt-out, other)
+
+StayBattle is a **decision-support tool for small private groups** — each
+listing on the platform is one URL that someone in a group pasted into
+their own private battle. It is not a search engine, not an aggregator,
+not a directory; there is no "browse all listings" surface, no public
+index, no bulk discovery. Each listing fetch is a single HTTPS request
+made the moment a user adds the URL, against the public listing page
+that anyone with the same URL can see logged-out.
+
+We'll honor takedown requests anyway. The path:
+
+### For property owners / hosts
+
+If a listing you own appears on this platform and you'd like it removed:
+
+1. Email the maintainer (see `LICENSE` / git log) with:
+   - The Airbnb (or other) URL you want removed.
+   - Proof of ownership (host display name visible on the listing
+     page, plus your matching account email).
+2. We'll remove the listing within 7 days and add the URL to a
+   blocklist so it can't be re-added on the instance you contacted.
+3. The instance is single-operator. If someone has forked this codebase
+   under AGPL and is running their own copy, we can't take down what
+   they show — you'd contact each operator separately. The AGPL license
+   does not give us any control over forks.
+
+### For DMCA notices
+
+Same channel. Include the standard DMCA elements:
+
+- Identification of the copyrighted work (a listing description, a
+  photo, etc.).
+- Identification of where the alleged infringement appears on the
+  StayBattle instance.
+- Your contact info.
+- A statement of good-faith belief that the use is not authorized.
+- A statement, under penalty of perjury, that you are authorized to
+  act on behalf of the copyright owner.
+
+We'll process and respond within the DMCA's 14-day window.
+
+### Counter-notice / mistake
+
+If you believe a takedown was made in error (e.g. the host opt-out
+was sent by someone who isn't the host), reply on the same email
+thread with what's wrong and we'll re-evaluate. We don't have a
+formal appeals UI; this is a personal project, not a platform.
+
+### How the takedown is implemented
+
+The instance operator runs:
+
+```bash
+node scripts/admin/remove-url.mjs <url> "DMCA from <name> <date>"
+```
+
+This:
+
+1. Deletes the listing row from the `listings` table (votes and
+   comments cascade via foreign key).
+2. Inserts the canonical URL into `blocked_urls`.
+3. The `addListing` server action refuses any future re-add of that
+   URL with a clear error message.
+
+Past-battles archive snapshots aren't touched — those rows already
+have the URL field scrubbed at archive time (see `PRIVACY.md`), so
+nothing in the trophy case points at the live listing.
+
+The blocklist is local to each StayBattle instance. Operators of
+forks are not bound by our takedowns.
+
+### What we won't do
+
+- We won't disclose who paste-added a particular URL. The "added by"
+  attribution is between the crew of one private battle.
+- We won't pre-scan or filter URL submissions for copyright. The crew
+  using one battle is responsible for what they paste into it, same
+  as a Slack thread or group text.
+- We won't honor "remove all listings in city X" or "block this
+  domain entirely." Takedowns are per-URL.
+
 ## Data handling
 
 StayBattle stores everything in a single local SQLite file (`./data/quickie.db`).
