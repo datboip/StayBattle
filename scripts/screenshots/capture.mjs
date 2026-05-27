@@ -61,10 +61,22 @@ async function makePage(browser, { viewport = "desktop", signedIn = true } = {})
     ]);
   }
   const page = await ctx.newPage();
+  // Hide the Next.js dev-mode badge ("N" floating in the corner of
+  // every dev-mode page) from every screenshot. The dev indicator
+  // renders inside a custom <nextjs-portal> element parked as a
+  // top-level child of <body>; hiding it from the outside CSS works
+  // because the element itself is in the light DOM. No-op on
+  // `next start` production builds, where the element never mounts.
+  await page.addStyleTag({
+    content: `nextjs-portal { display: none !important; }`,
+  });
   // Pre-set localStorage flags BEFORE any page UI renders. This
   // includes dismissing the demo-mode modal so it doesn't blanket
   // every screenshot.
   await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+  await page.addStyleTag({
+    content: `nextjs-portal { display: none !important; }`,
+  });
   await page.evaluate(({ id, name, signedIn }) => {
     // Dismiss the demo-mode disclaimer modal in every captured shot
     window.localStorage.setItem("staybattle:demo-modal-dismissed:v1", "1");
