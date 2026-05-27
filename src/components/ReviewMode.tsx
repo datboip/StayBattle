@@ -119,6 +119,9 @@ export function ReviewMode({
     return current.votes.find((v) => v.voter_id === voter.id)?.value ?? 0;
   })();
 
+  const isOwnSubmission =
+    !!voter && !!current && current.added_by_id === voter.id;
+
   const goNext = () => {
     if (index >= total - 1) return;
     setIndex((i) => i + 1);
@@ -129,7 +132,7 @@ export function ReviewMode({
   };
 
   const vote = (target: VoteValue) => {
-    if (!voter || !current) return;
+    if (!voter || !current || isOwnSubmission) return;
     const next: 0 | VoteValue = myVote === target ? 0 : target;
     startTransition(async () => {
       await castVote(current.id, voter.id, voter.name, next);
@@ -145,7 +148,7 @@ export function ReviewMode({
   // centered, 4-5 swipe right (endorsement). A middle "3" still advances
   // but without the swipe; feels appropriate for a neutral verdict.
   const voteAndNext = (target: VoteValue) => {
-    if (!voter || !current || swipeDir) return;
+    if (!voter || !current || swipeDir || isOwnSubmission) return;
     const dir = target >= 4 ? "right" : target <= 2 ? "left" : null;
     if (dir) setSwipeDir(dir);
     const next: 0 | VoteValue = myVote === target ? 0 : target;
@@ -333,7 +336,7 @@ export function ReviewMode({
             without re-touching the slider. */}
         <div className="border-t border-zinc-900 px-4 py-4">
           <div className="mb-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-zinc-500">
-            <span>What's the verdict?</span>
+            <span>{isOwnSubmission ? "Your submission" : "What's the verdict?"}</span>
             <button
               type="button"
               onClick={goNext}
@@ -342,20 +345,34 @@ export function ReviewMode({
                   ? "border-[#10C8D2]/60 bg-[#10C8D2]/10 text-[#10C8D2] hover:bg-[#10C8D2]/20"
                   : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500"
               }`}
-              title={myVote ? `Already rated ${myVote}/5 — advance to next listing` : "Move to next listing without rating"}
+              title={
+                isOwnSubmission
+                  ? "Can't rate your own listing — advance to next"
+                  : myVote
+                    ? `Already rated ${myVote}/5 — advance to next listing`
+                    : "Move to next listing without rating"
+              }
             >
-              {myVote ? `Keep ${myVote} · Next →` : "Skip →"}
+              {isOwnSubmission ? "Next →" : myVote ? `Keep ${myVote} · Next →` : "Skip →"}
             </button>
           </div>
-          <RatingSlider
-            value={myVote === 0 ? null : myVote}
-            onCommit={(v) => voteAndNext(v)}
-            size="large"
-            disabled={submitting || swipeDir !== null}
-          />
-          <p className="mt-2 font-mono text-[9px] uppercase tracking-wider text-zinc-600">
-            ← → arrows · 1-5 keys rate · space skips
-          </p>
+          {isOwnSubmission ? (
+            <div className="rounded-sm border border-zinc-800 bg-zinc-950/50 px-3 py-3 text-center font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+              You added this one · can't rate your own submission
+            </div>
+          ) : (
+            <>
+              <RatingSlider
+                value={myVote === 0 ? null : myVote}
+                onCommit={(v) => voteAndNext(v)}
+                size="large"
+                disabled={submitting || swipeDir !== null}
+              />
+              <p className="mt-2 font-mono text-[9px] uppercase tracking-wider text-zinc-600">
+                ← → arrows · 1-5 keys rate · space skips
+              </p>
+            </>
+          )}
         </div>
 
         {/* Navigation footer */}

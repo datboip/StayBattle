@@ -157,7 +157,12 @@ export function ListingCard({
           legible. Trash-talk toggle sits on its own row below, sharing space
           with the voter-avatars chip cloud. */}
       <div className="mt-3 border-t border-zinc-900 px-3 py-3">
-        <VoteButtons listingId={listing.id} votes={listing.votes} score={listing.score} />
+        <VoteButtons
+          listingId={listing.id}
+          votes={listing.votes}
+          score={listing.score}
+          addedById={listing.added_by_id}
+        />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-2">

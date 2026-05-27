@@ -134,7 +134,7 @@ function PastBattleCard({ past }: { past: PastBattle }) {
                         </span>
                       )}
                       <span className="ml-2 font-mono tabular-nums text-zinc-500">
-                        ({entries[0].score.toFixed(1)} ★)
+                        {entries[0].score.toFixed(1)}<span className="text-zinc-600"> / 5</span>
                       </span>
                     </span>
                     <ul className="flex flex-col gap-0.5 pl-5 text-sm">

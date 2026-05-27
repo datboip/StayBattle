@@ -195,6 +195,17 @@ export async function castVote(
   }
   if (!consume(`vote:${vid}`, LIMITS.vote)) return RATE_LIMITED;
 
+  // Block self-vote — submitters shouldn't be able to rate their own
+  // listing. The 1–5 scale already moderates ballot-stuffing but a
+  // submitter giving themselves 5 and everyone else 1 is the obvious
+  // failure mode the rating slider can't dampen on its own.
+  const ownerRow = db
+    .prepare("select added_by_id from listings where id = ?")
+    .get(id) as { added_by_id: string | null } | undefined;
+  if (ownerRow && ownerRow.added_by_id && ownerRow.added_by_id === vid) {
+    return { ok: false, error: "Can't rate your own listing" };
+  }
+
   const name = cleanString(voterName, NAME_MAX) || "anon";
 
   if (value === 0) {

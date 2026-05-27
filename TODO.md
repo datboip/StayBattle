@@ -12,9 +12,10 @@ JSON-LD island today. The deferred state has a lot more.
 Implementation sketch: add a `parseDeferredState(html)` helper next to
 `collectJsonLd`. Pull out:
 
-- **Amenities** → array of `{ groupName, items: [{ title, available }] }`.
-  Path is something like `presentation.stayProductDetailPage.sections.sections[]`
-  where `sectionId === "AMENITIES_DEFAULT"`. Each item has a localized title.
+- ~~**Amenities** → array of `{ groupName, items: [{ title, available }] }`.~~
+  **DONE** — mined from the same Airbnb GraphQL call that backs availability;
+  stored as `listings.amenities` JSON, parsed on read (see `types.ts:35`).
+  Curated subset via `AMENITY_TAGS` in `airbnb-graphql.ts`.
 - **House rules** → pets / smoking / parties / events / quiet hours / check-in
   window. Section id `POLICIES_DEFAULT` or similar.
 - **Cancellation policy** → flexible / moderate / strict / super-strict, plus
@@ -90,29 +91,29 @@ worst realistic outcome is a C&D letter + IP block, never a lawsuit.
 
 ## Expand reference places → "things to do" / "places of interest"
 
-Right now `places` is a small organizer-only list of pinned reference dots on
-the map. Expand it into something the whole crew uses to settle arguments
-about *where* the trip should be centered.
+`places` started as an organizer-only list of pinned reference dots; the
+recent drop-a-pin work made it crew-wide. Expand the rest of the way into
+a real "argument-settler" layer.
 
-- **Anyone can submit**, not just the organizer. A submitter pastes a name +
-  address (or a Google Maps URL we strip) and we geocode via Nominatim
-  (already wired up — same code path that places listings on the map).
+- ~~**Anyone can submit**~~ — **DONE.** Drop-a-pin mode lets any signed-in
+  voter click the map to add a place with name, optional address, optional
+  URL. `addPlaceAtCoords` in `actions.ts` skips geocoding (lat/lng come
+  straight from the click).
 - **Categorize**: theme park, restaurant, beach, museum, bar, airport,
   grocery, etc. Curated picker + free-text. Use different marker colors /
   icons per category so the map stays readable when 30 pins are on it.
+  Currently `places.kind` is hardcoded to `"reference"` for drop-pins.
 - **Notes field** — "this is the one with the good sushi", "kids loved
-  this last time", etc. One short sentence each. Shows in the popup.
+  this last time", etc. Drop-pin form already has a `url` slot; a free-
+  text note would be the natural next field.
 - **Per-listing distance summary** — for each booking candidate, show "8min
   to SeaWorld · 25min to Epcot · 3min to closest grocery." Straight-line
   distance is fine for v1; OSRM / Valhalla routing for v2 if anyone cares.
-- **Map filter chips** — toggle categories on/off. "Hide all the bars, just
-  show family stuff" type filters.
-- **No scraping at all** for this — purely user-submitted name + address.
-  Less legal surface, less brittle, and the data we'd scrape (hours,
-  ratings, photos) would just be noise for an argument-settler.
-- **Light dedup** — if two people add "SeaWorld San Diego" with the same
-  geocode, merge them. Show "added by Alice, Bob" so the group sees
-  consensus building.
+- **Map filter chips** — toggle categories on/off. Depends on categorize.
+- ~~**No scraping at all**~~ — **DONE / by-design.** Drop-pin is pure
+  user input; no Nominatim call required for placement.
+- **Light dedup** — if two people drop a pin within ~50m of the same name,
+  merge them. Show "added by Alice, Bob" so the group sees consensus.
 
 The reason this is good: vacation arguments are rarely about *which*
 listing per se — they're about *where the trip should be anchored*. A map
@@ -122,29 +123,31 @@ than discussing in the abstract.
 
 ## Demo media for the README
 
-Currently only two screenshots committed (`empty-state.png`, `sign-in.png`).
-README has a `<!-- TODO: drop a 10-15 second screencap GIF here -->` placeholder.
-Capture:
+**DONE** — 13 screenshots committed in `docs/screenshots/`, regenerated
+by `scripts/screenshots/seed-demo.mjs` + `scripts/screenshots/capture.mjs`
+against a sandboxed `data-demo/quickie.db` so no real names/places leak.
+Covered: sign-in (desktop + mobile), battle header, voting grid (desktop +
+mobile), review mode (+ 3 frames for a swipe loop), map, trophy case,
+comments expanded.
 
-- **Submission phase view** — submitter sees anonymized photos, no names
-- **Voting phase view** — same listing, now with submitter attribution + votes/comments visible
-- **Organizer view** — invite code panel, kick controls, override / mark-booked dialog
-- **Voter view** — voting buttons + comments thread + reply
-- **Swipe-through review mode** — one card swiping
-- **Map view** — listings + reference pins
-- **Winner / trophy case** — closed battle with podium
-- **One single GIF** (10-15s) — paste URL → fighter card appears → vote → comment → see it rank up
+Still open:
 
-Run `make-screenshots.sh` (doesn't exist yet) against a clean seed DB so
-no real names/places leak. Save anything sensitive into the
-`docs/screenshots/local-*` or `private-*` patterns already gitignored.
+- **Submission-phase view** — capture script currently skips it because
+  the seeded demo battle is in voting phase. Either seed a second
+  submission-phase battle or drop the capture step (form is small enough
+  to not need a hero shot).
+- **GIF / screencap** (10–15s) — paste URL → card appears → rate → comment →
+  see it climb. Still aspirational; Playwright `video` recording is the
+  easiest path if we want this.
 
 ## Marketing site
 
-Standalone marketing landing at the project's eventual public domain.
-Single-page Astro + Tailwind, reuses the existing brand assets, links
-to the GitHub repo + a live demo. ~5 hr v1 build, separate session
-from app work.
+**DONE** — live at [staybattle.com](https://staybattle.com), separate
+repo at [`datboip/staybattle-site`](https://github.com/datboip/staybattle-site),
+plain HTML (not Astro, didn't need the toolchain). Symlinks the app
+repo's `docs/screenshots/` into `/screenshots/` on the VPS so a screenshot
+regen + `git push` on the app repo automatically refreshes the marketing
+visuals on next pull. Brand book mounted at `staybattle.com/brand`.
 
 ## Back up the SQLite DB when flipping to real production
 
@@ -179,20 +182,20 @@ user, this isn't a fire drill.
   must-haves diff side by side. Like Trulia's compare-homes view.
 - **Distance to a pinned place** — for each manually-pinned reference place
   on the map, compute travel time / straight-line distance to each listing.
-- **Per-voter rankings** — instead of (or alongside) the existing upvote /
-  downvote, let each voter drag their top 5 into order. Combine via
-  Borda count or Condorcet for a more nuanced "winner."
-- **Block self-vote on submitted listings** — currently a submitter can rate
-  their own listing on the 1–5 scale. We're allowing it for v1 and relying
-  on the scale itself to moderate bias. If we see "everyone rates their own
-  5 and the rest 1" complaints, flip to: vote buttons hidden on cards you
-  submitted. One-line check in `castVote` + a UI guard.
-  - **Refinement to consider when we flip:** if a voter submitted 4+
-    listings, allow them to vote on their own. Rationale: a heavy submitter
-    has multiple horses in the race and should be able to differentiate
-    favorites among them. Threshold (4? 3? configurable per battle?) is
-    bikeshed-able. Probably overengineering — keep simple "no self-vote at
-    all" until someone actually complains.
+- **Per-voter rankings** — instead of (or alongside) the existing 1–5
+  slider, let each voter drag their top 5 into order. Combine via Borda
+  count or Condorcet for a more nuanced "winner."
+- ~~**Block self-vote on submitted listings**~~ — **DONE.** Server check in
+  `castVote` returns `Can't rate your own listing`; UI guards in
+  `VoteButtons` and `ReviewMode` swap the slider for a "You added this
+  one · can't rate your own submission" note when the signed-in voter's
+  id matches `listing.added_by_id`.
+  - **Refinement still open:** if a voter submitted 4+ listings, allow
+    them to vote on their own. Rationale: a heavy submitter has multiple
+    horses in the race and should be able to differentiate favorites
+    among them. Threshold (4? 3? configurable per battle?) is
+    bikeshed-able. Probably overengineering — keep simple until someone
+    actually complains.
 - **"Why I voted X" prompt** — small text field that appears after voting,
   so the group sees reasoning, not just numbers.
 - **Calendar export** — once a winner is picked, generate an .ics with the

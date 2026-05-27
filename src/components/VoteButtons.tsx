@@ -15,21 +15,28 @@ export function VoteButtons({
   listingId,
   votes,
   score,
+  addedById,
 }: {
   listingId: string;
   votes: Vote[];
   score: number | null;
+  /** Voter id of the user who submitted this listing. When this matches
+   *  the signed-in voter, the slider is locked — submitters can't rate
+   *  their own listings (the 1–5 scale doesn't dampen self-5s). */
+  addedById?: string | null;
 }) {
   const router = useRouter();
   const { voter } = useVoter();
   const [isPending, startTransition] = useTransition();
+
+  const isOwnSubmission = !!voter && !!addedById && voter.id === addedById;
 
   const myVote: VoteValue | null = voter
     ? (votes.find((v) => v.voter_id === voter.id)?.value ?? null)
     : null;
 
   const handleCommit = (next: VoteValue) => {
-    if (!voter) return;
+    if (!voter || isOwnSubmission) return;
     startTransition(async () => {
       await castVote(listingId, voter.id, voter.name, next);
       router.refresh();
@@ -38,12 +45,18 @@ export function VoteButtons({
 
   return (
     <div className="flex flex-col gap-1.5">
+      {isOwnSubmission ? (
+        <div className="rounded-sm border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-center font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+          Your submission · can't rate your own
+        </div>
+      ) : (
       <RatingSlider
         value={myVote}
         onCommit={handleCommit}
         size="compact"
         disabled={isPending || !voter}
       />
+      )}
       <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-zinc-500">
         <span>
           {votes.length === 0

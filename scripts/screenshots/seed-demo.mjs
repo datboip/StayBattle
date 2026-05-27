@@ -222,15 +222,21 @@ const RATING_BANDS = [
   [2, 3, 2, 1, 3, 2],   // lower: nope-leaning
   [1, 2, 1, 2, 1, 3],   // bottom: graveyard
 ];
-listings.forEach((listing, i) => {
+// Re-read the listing rows including their re-assigned added_by_id so we
+// can skip self-votes (server rejects them too — see actions.ts).
+const listingsWithOwner = db
+  .prepare("select id, added_by_id from listings")
+  .all();
+listingsWithOwner.forEach((listing, i) => {
   const bandIdx = Math.min(
     RATING_BANDS.length - 1,
-    Math.floor((i / Math.max(listings.length, 1)) * RATING_BANDS.length),
+    Math.floor((i / Math.max(listingsWithOwner.length, 1)) * RATING_BANDS.length),
   );
   const band = RATING_BANDS[bandIdx];
   const n = 3 + (i % 5); // 3–7 voters per listing
   for (let k = 0; k < n; k++) {
     const [name, id] = voterEntries[(i + k) % voterEntries.length];
+    if (id === listing.added_by_id) continue; // submitters can't rate their own
     const value = band[(i + k) % band.length];
     try {
       insertVote.run(listing.id, id, name, value, 18 - k);

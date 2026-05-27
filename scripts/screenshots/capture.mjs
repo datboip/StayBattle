@@ -289,24 +289,12 @@ async function main() {
     await ctx.close();
   }
 
-  // 10) Add-listing form / paste a URL state
-  {
-    const { ctx, page } = await makePage(browser, { viewport: "desktop" });
-    await page.goto(BASE_URL, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
-    // Try to find the URL input — it has placeholder "Paste an Airbnb URL…"
-    const input = page.locator('input[placeholder*="Airbnb URL" i]').first();
-    if (await input.isVisible().catch(() => false)) {
-      await input.scrollIntoViewIfNeeded();
-      await input.focus();
-      await input.fill("https://www.airbnb.com/rooms/12345");
-      await page.waitForTimeout(800);
-      await shoot(page, "add-listing");
-    } else {
-      console.log("  · add-listing skipped (URL input not visible — maybe signed in as non-organizer)");
-    }
-    await ctx.close();
-  }
+  // Note: no add-listing capture. AddListingForm only renders during
+  // the submission phase; the seeded demo battle is in voting phase so
+  // the form is gone by the time the screenshots run. If we ever want a
+  // hero shot of paste-a-URL, seed a second submission-phase demo battle
+  // and capture it from there — for now the form is small enough that
+  // the README doesn't need a dedicated frame.
 
   await browser.close();
   console.log("─".repeat(60));
