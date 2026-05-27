@@ -211,13 +211,27 @@ const insertVote = db.prepare(
   `insert into votes (listing_id, voter_id, voter_name, value, created_at)
    values (?, ?, ?, ?, datetime('now', '-' || ? || ' hours'))`,
 );
+// 1–5 ratings, fanned out so the ranking screenshot shows a real gradient.
+// Top of the catalog hovers near 4–5 (Like/Love), middle around 3 (OK),
+// bottom 1–2 (Nope/Meh). Sprinkle one off-trend rating per listing so
+// every card has at least one dissenting voter — keeps tiles realistic.
+const RATING_BANDS = [
+  [5, 5, 4, 5, 4, 4],   // top: mostly Love + Like
+  [4, 4, 3, 5, 4, 3],   // upper-mid: solid
+  [3, 4, 3, 3, 2, 4],   // middle: meh-to-ok
+  [2, 3, 2, 1, 3, 2],   // lower: nope-leaning
+  [1, 2, 1, 2, 1, 3],   // bottom: graveyard
+];
 listings.forEach((listing, i) => {
-  // 3-7 votes per listing, mostly positive with the occasional downvote
-  const n = 3 + (i % 5);
+  const bandIdx = Math.min(
+    RATING_BANDS.length - 1,
+    Math.floor((i / Math.max(listings.length, 1)) * RATING_BANDS.length),
+  );
+  const band = RATING_BANDS[bandIdx];
+  const n = 3 + (i % 5); // 3–7 voters per listing
   for (let k = 0; k < n; k++) {
     const [name, id] = voterEntries[(i + k) % voterEntries.length];
-    // Top listings get more upvotes, bottom listings more downvotes
-    const value = i < listings.length * 0.7 ? (k === 0 && i % 6 === 0 ? -1 : 1) : (k === 0 ? 1 : -1);
+    const value = band[(i + k) % band.length];
     try {
       insertVote.run(listing.id, id, name, value, 18 - k);
     } catch {} // duplicate (voter, listing) unique constraint may bite — fine
@@ -276,15 +290,22 @@ const insertPast = db.prepare(
 function podiumFrom(offset) {
   // Pick 3 different listings as the podium, rotating through the catalog.
   const three = [0, 1, 2].map((k) => allListings[(offset + k) % allListings.length]);
+  // Synthetic podium for past-battle cards: gold ≈ 4.8, silver ≈ 4.3,
+  // bronze ≈ 3.7 with a believable raters spread. Matches the live
+  // archive shape from past-battles-server.ts.
+  const tierStats = [
+    { score: 4.8, vote_count: 6 },
+    { score: 4.3, vote_count: 5 },
+    { score: 3.7, vote_count: 4 },
+  ];
   return three.map((l, i) => ({
     title: l.title ?? `Cabin ${i + 1}`,
     short_title: (l.title ?? `Cabin ${i + 1}`).slice(0, 40),
     location: l.location,
     image_url: l.image_url,
     url: l.url,
-    score: 9 - i * 2,
-    upvotes: 9 - i * 2,
-    downvotes: 0,
+    score: tierStats[i].score,
+    vote_count: tierStats[i].vote_count,
     added_by_name: voterEntries[i % voterEntries.length][0],
     tier: i + 1,
   }));

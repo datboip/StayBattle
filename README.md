@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logo-banner.png" alt="StayBattle" width="400" />
+<img src="public/logo-banner.svg" alt="StayBattle" width="400" />
 
 # StayBattle
 
@@ -100,8 +100,8 @@ You still book on Airbnb. StayBattle is the meeting table, not the storefront.
 1. **Organizer** sets up a battle: trip name, dates, submission deadline.
 2. **Crew joins** with an invite code, each with their own name + PIN.
 3. **Submission phase** — everyone pastes Airbnb URLs in. The server grabs photos, location, beds/baths, and rating. Others see only anonymized photos until the deadline — no name-dropping, no bias.
-4. **Battle phase** — at the deadline (or when the organizer hits "start now"), everyone can see all submissions. Vote up or down. Leave trash talk. Each submitter's pre-submission "case" sits pinned at the top of the comments.
-5. **Swipe-through review** — a one-card-at-a-time mode for going through the pile.
+4. **Battle phase** — at the deadline (or when the organizer hits "start now"), everyone can see all submissions. Rate each one **1–5** (Nope · Meh · OK · Like · Love). Leave trash talk. Each submitter's pre-submission "case" sits pinned at the top of the comments.
+5. **Swipe-through review** — a one-card-at-a-time mode for going through the pile; drag the slider to rate, swipe direction follows the score.
 6. **Map** — all listings + any landmarks you pin (resorts, theme parks, dinner spots).
 
 You click through to Airbnb to actually book. StayBattle never replaces that step.
