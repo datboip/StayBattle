@@ -168,27 +168,28 @@ visuals on next pull. Brand book mounted at `staybattle.com/brand`.
 
 ## Back up the SQLite DB when flipping to real production
 
-Right now the live VPS deployment runs with `STAYBATTLE_DEMO_MODE=true`
-(see `staybattle-site/infra/staybattle.service`). Everything in
-`/var/lib/staybattle/quickie.db` is reseedable from
-`scripts/screenshots/seed-demo.mjs` — zero data-loss risk if the disk dies.
+**On-box backups: DONE.** The marketing-site repo's `infra/` now ships:
 
-The moment that env flag flips to false and real users start submitting
-listings and casting votes, the DB becomes precious. Before that
-happens, set up:
+- `backup-db.sh` — `sqlite3 .backup` (consistent against in-flight writes)
+  into `/var/lib/staybattle/backups/quickie-<ISO timestamp>.db`. Retains
+  the 30 most recent by default (override via `STAYBATTLE_BACKUP_RETAIN`).
+- `staybattle-backup.service` — systemd oneshot that runs the script.
+- `staybattle-backup.timer` — daily 03:15 UTC trigger with
+  `Persistent=true` so a stretch of downtime catches up on next boot.
 
-- Daily cron `cp /var/lib/staybattle/quickie.db /backups/quickie-$(date +%Y%m%d).db`
-  with a `sqlite3 .backup` command so it's safe against in-flight writes,
-  not just a raw file copy.
-- Off-box destination — Cloudflare R2, S3, or even a `scp` to a separate
-  machine. The whole point is "if the VPS disk dies, we still have the
-  votes." Same-box backups don't qualify.
-- Retention policy — 30 daily snapshots, ~30 × ~few-MB = trivial cost.
-- Restore drill — once a quarter, pull the latest snapshot to a scratch
-  box and verify the schema migrations + a sample query still work.
+Enable + restore-drill instructions live in `staybattle-site/infra/DEPLOY.md`.
 
-Currently no urgency. Capture this here so the moment we have a real
-user, this isn't a fire drill.
+**Still open (do BEFORE flipping `STAYBATTLE_DEMO_MODE=false`):**
+
+- **Off-box destination** — same-box backups don't survive disk failure.
+  Pick one and wire it into `backup-db.sh` after the snapshot line
+  (script echoes the path to stdout for exactly this):
+  - `aws s3 cp "$OUT" s3://staybattle-backups/`
+  - `rclone copy "$OUT" cloudflare-r2:staybattle-backups/`
+  - `scp "$OUT" backup-host:/srv/staybattle/`
+- **Quarterly restore drill** — pull the latest snapshot to a scratch
+  box, `STAYBATTLE_DB_DIR=/tmp npm run dev`, verify schema + UI. Drill
+  steps in DEPLOY.md.
 
 ## Other ideas
 
