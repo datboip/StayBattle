@@ -211,6 +211,35 @@ export default function MapView({
   const [pendingUrl, setPendingUrl] = useState("");
   const [pendingKind, setPendingKind] = useState<PlaceCategoryId>("other");
   const [isAddingPlace, startAddPlace] = useTransition();
+  // Category filter for reference pins. Categories in this set are
+  // hidden on the map; categories absent are visible. Persisted to
+  // localStorage so the filter survives reloads.
+  const [hiddenKinds, setHiddenKinds] = useState<Set<PlaceCategoryId>>(
+    () => new Set(),
+  );
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("sb-map-hidden-kinds");
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) setHiddenKinds(new Set(arr as PlaceCategoryId[]));
+      }
+    } catch {} // SSR or quota — fine, defaults to "show all"
+  }, []);
+  const toggleKind = (id: PlaceCategoryId) => {
+    setHiddenKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        window.localStorage.setItem(
+          "sb-map-hidden-kinds",
+          JSON.stringify(Array.from(next)),
+        );
+      } catch {}
+      return next;
+    });
+  };
   // Imperative handle so the "fit all" button can refit on demand without
   // triggering automatic refits via useEffect dependencies.
   const refitRef = useRef<(() => void) | null>(null);
@@ -262,12 +291,31 @@ export default function MapView({
     [listings],
   );
 
+  // Count places per category — only categories with ≥1 pin become filter
+  // chips, so the row doesn't show all 10 categories when only 3 are used.
+  const placeCounts = useMemo(() => {
+    const counts = new Map<PlaceCategoryId, number>();
+    for (const p of places) {
+      const id = resolvePlaceCategory(p.kind).id;
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return counts;
+  }, [places]);
+
+  const visiblePlaces = useMemo(
+    () =>
+      places.filter(
+        (p) => !hiddenKinds.has(resolvePlaceCategory(p.kind).id),
+      ),
+    [places, hiddenKinds],
+  );
+
   const allPoints = useMemo<[number, number][]>(
     () => [
       ...placedListings.map((l) => [l.latitude, l.longitude] as [number, number]),
-      ...places.map((p) => [p.latitude, p.longitude] as [number, number]),
+      ...visiblePlaces.map((p) => [p.latitude, p.longitude] as [number, number]),
     ],
-    [placedListings, places],
+    [placedListings, visiblePlaces],
   );
 
   const initialCenter = useRef<[number, number]>([20, 0]);
@@ -312,6 +360,36 @@ export default function MapView({
           {dropPinMode ? "❌ cancel" : "📍 drop a pin"}
         </button>
       </div>
+      {/* Category filter row — bottom-left of the map. Only categories
+          with at least one pin become chips, so a map with just theme
+          parks and a grocery doesn't show eight irrelevant toggles.
+          Toggling persists to localStorage via toggleKind(). */}
+      {placeCounts.size > 0 && (
+        <div className="absolute bottom-3 left-3 z-[1000] flex max-w-[calc(100%-1.5rem)] flex-wrap gap-1">
+          {PLACE_CATEGORIES.filter((c) => (placeCounts.get(c.id) ?? 0) > 0).map((c) => {
+            const count = placeCounts.get(c.id) ?? 0;
+            const hidden = hiddenKinds.has(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => toggleKind(c.id)}
+                aria-pressed={!hidden}
+                title={hidden ? `Show ${c.label.toLowerCase()} pins` : `Hide ${c.label.toLowerCase()} pins`}
+                className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 font-mono text-[10px] uppercase tracking-wider backdrop-blur transition ${
+                  hidden
+                    ? "border-zinc-800 bg-zinc-950/60 text-zinc-600 line-through decoration-zinc-600"
+                    : "border-zinc-700 bg-zinc-950/80 text-zinc-200 hover:border-zinc-500"
+                }`}
+              >
+                <span aria-hidden="true">{c.emoji}</span>
+                <span>{c.label}</span>
+                <span className="ml-0.5 text-zinc-500">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       <MapContainer
         center={initialCenter.current}
         zoom={2}
@@ -524,7 +602,7 @@ export default function MapView({
           );
         })}
 
-        {places.map((p) => (
+        {visiblePlaces.map((p) => (
           <Marker
             key={p.id}
             position={[p.latitude, p.longitude]}

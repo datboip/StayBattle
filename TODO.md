@@ -114,7 +114,10 @@ a real "argument-settler" layer.
 - **Per-listing distance summary** — for each booking candidate, show "8min
   to SeaWorld · 25min to Epcot · 3min to closest grocery." Straight-line
   distance is fine for v1; OSRM / Valhalla routing for v2 if anyone cares.
-- **Map filter chips** — toggle categories on/off. Depends on categorize.
+- ~~**Map filter chips**~~ — **DONE.** Bottom-left of the map, a chip
+  per category that has ≥1 pin (so a 3-category map doesn't show 10
+  chips). Tap to hide that category; line-through + dimmed text signals
+  the hidden state. Persists to `localStorage` under `sb-map-hidden-kinds`.
 - ~~**No scraping at all**~~ — **DONE / by-design.** Drop-pin is pure
   user input; no Nominatim call required for placement.
 - **Light dedup** — if two people drop a pin within ~50m of the same name,
