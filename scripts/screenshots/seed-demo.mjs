@@ -269,17 +269,24 @@ listings.slice(0, DEMO_COMMENTS.length).forEach((listing, i) => {
 // with theme parks people instantly recognise.
 console.log("Inserting reference places…");
 const refPlaces = [
-  { name: "Gatorland",                   lat: 28.3766, lon: -81.3993, by: "Alex"   },
-  { name: "Lake Eola Park",              lat: 28.5436, lon: -81.3711, by: "Sam"    },
-  { name: "ICON Park",                   lat: 28.4435, lon: -81.4684, by: "Riley"  },
-  { name: "Harry P. Leu Gardens",        lat: 28.5614, lon: -81.3608, by: "Jordan" },
-  { name: "Orlando Science Center",      lat: 28.5713, lon: -81.3680, by: "Casey"  },
+  { name: "Magic Kingdom",               lat: 28.4177, lon: -81.5812, by: "Alex",   kind: "theme-park" },
+  { name: "Gatorland",                   lat: 28.3766, lon: -81.3993, by: "Alex",   kind: "theme-park" },
+  { name: "MCO · Orlando Int'l Airport", lat: 28.4312, lon: -81.3081, by: "Sam",    kind: "airport"    },
+  { name: "Publix · Sand Lake",          lat: 28.4485, lon: -81.4794, by: "Morgan", kind: "grocery"    },
+  { name: "Disney Springs",              lat: 28.3702, lon: -81.5189, by: "Riley",  kind: "shopping"   },
+  { name: "Harry P. Leu Gardens",        lat: 28.5614, lon: -81.3608, by: "Jordan", kind: "nature"     },
+  { name: "Hash House A Go Go",          lat: 28.4423, lon: -81.4707, by: "Drew",   kind: "restaurant" },
+  { name: "ICEBAR Orlando",              lat: 28.4435, lon: -81.4684, by: "Quinn",  kind: "bar"        },
+  { name: "Orlando Science Center",      lat: 28.5713, lon: -81.3680, by: "Casey",  kind: "museum"     },
+  { name: "Cocoa Beach",                 lat: 28.3200, lon: -80.6076, by: "Sam",    kind: "beach"      },
 ];
 const insertPlace = db.prepare(
   `insert or ignore into places (id, name, latitude, longitude, kind, added_by_name, created_at)
-   values (?, ?, ?, ?, 'reference', ?, datetime('now', '-' || ? || ' hours'))`,
+   values (?, ?, ?, ?, ?, ?, datetime('now', '-' || ? || ' hours'))`,
 );
-refPlaces.forEach((p, i) => insertPlace.run(randomUUID(), p.name, p.lat, p.lon, p.by, 20 - i));
+refPlaces.forEach((p, i) =>
+  insertPlace.run(randomUUID(), p.name, p.lat, p.lon, p.kind, p.by, 20 - i),
+);
 
 // Plant a handful of closed past battles so the trophy case looks
 // "lived in" — three trips' worth of podiums, not just one sad row.

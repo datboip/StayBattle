@@ -11,6 +11,11 @@ import { withTripDates, type TripDates } from "@/lib/trip";
 import { shortDisplayName } from "@/lib/title";
 import { confirmDialog } from "./Modal";
 import type { ListingWithStats, Place } from "@/lib/types";
+import {
+  PLACE_CATEGORIES,
+  resolvePlaceCategory,
+  type PlaceCategoryId,
+} from "@/lib/place-categories";
 
 // Default fallback icon (the standard leaflet teardrop) — only used if a
 // listing has no availability status info at all.
@@ -58,20 +63,31 @@ function listingPin(status: "available" | "unavailable" | "unknown") {
   });
 }
 
-// Reference-place marker. NOTE: divIcon's `html` is interpreted as raw HTML —
-// only put static markup here. Never interpolate user-controlled strings into
-// this template or you've created a stored-XSS sink.
-const PlaceIcon = L.divIcon({
-  className: "",
-  html: `<div style="
-    width: 18px; height: 18px; border-radius: 50%;
-    background: #fbbf24; border: 2px solid white;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
-  "></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-  popupAnchor: [0, -10],
-});
+// Reference-place marker. The fill color comes from the curated category
+// list — only the color hex is interpolated, and it's drawn from the
+// hard-coded PLACE_CATEGORIES table (no user input ever flows into this
+// HTML, so the stored-XSS sink is closed by construction).
+const PLACE_ICON_CACHE = new Map<string, L.DivIcon>();
+function placeIcon(kind: string | null | undefined): L.DivIcon {
+  const cat = resolvePlaceCategory(kind);
+  const cached = PLACE_ICON_CACHE.get(cat.id);
+  if (cached) return cached;
+  const icon = L.divIcon({
+    className: "",
+    html: `<div style="
+      width: 22px; height: 22px; border-radius: 50%;
+      background: ${cat.color}; border: 2px solid white;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; line-height: 1;
+    ">${cat.emoji}</div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -12],
+  });
+  PLACE_ICON_CACHE.set(cat.id, icon);
+  return icon;
+}
 
 /**
  * Run an initial fit-to-points exactly once when the map first has data,
@@ -193,6 +209,7 @@ export default function MapView({
   const [pendingName, setPendingName] = useState("");
   const [pendingAddress, setPendingAddress] = useState("");
   const [pendingUrl, setPendingUrl] = useState("");
+  const [pendingKind, setPendingKind] = useState<PlaceCategoryId>("other");
   const [isAddingPlace, startAddPlace] = useTransition();
   // Imperative handle so the "fit all" button can refit on demand without
   // triggering automatic refits via useEffect dependencies.
@@ -204,6 +221,7 @@ export default function MapView({
     setPendingName("");
     setPendingAddress("");
     setPendingUrl("");
+    setPendingKind("other");
   };
 
   const cancelPendingPin = () => {
@@ -211,6 +229,7 @@ export default function MapView({
     setPendingName("");
     setPendingAddress("");
     setPendingUrl("");
+    setPendingKind("other");
   };
 
   const submitPendingPin = () => {
@@ -225,6 +244,7 @@ export default function MapView({
         pendingPin.lat,
         pendingPin.lng,
         voter?.name || "",
+        pendingKind,
       );
       if (res.ok) {
         cancelPendingPin();
@@ -378,6 +398,33 @@ export default function MapView({
                   maxLength={500}
                   className="w-full rounded-sm border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-rose-400"
                 />
+                <div
+                  role="radiogroup"
+                  aria-label="Category"
+                  className="flex flex-wrap gap-1"
+                >
+                  {PLACE_CATEGORIES.map((c) => {
+                    const selected = c.id === pendingKind;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => setPendingKind(c.id)}
+                        title={c.label}
+                        className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider transition ${
+                          selected
+                            ? "border-rose-400 bg-rose-500/15 text-rose-100"
+                            : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                        }`}
+                      >
+                        <span aria-hidden="true">{c.emoji}</span>
+                        <span>{c.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
                 <p className="font-mono text-[9px] uppercase tracking-wider text-zinc-500">
                   {pendingPin.lat.toFixed(4)}, {pendingPin.lng.toFixed(4)}
                 </p>
@@ -481,7 +528,7 @@ export default function MapView({
           <Marker
             key={p.id}
             position={[p.latitude, p.longitude]}
-            icon={PlaceIcon}
+            icon={placeIcon(p.kind)}
             title={p.name}
           >
             <Popup>
@@ -494,7 +541,8 @@ export default function MapView({
                 )}
                 <div className="flex flex-col gap-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   <span>
-                    📌 reference pin
+                    <span aria-hidden="true">{resolvePlaceCategory(p.kind).emoji}</span>{" "}
+                    {resolvePlaceCategory(p.kind).label}
                     {p.added_by_name && (
                       <>
                         <span className="mx-1">·</span>added by{" "}

@@ -38,6 +38,7 @@ import {
   URL_MAX,
   VOTER_ID_MAX,
 } from "@/lib/validate";
+import { isKnownPlaceCategoryId } from "@/lib/place-categories";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 export type SignInResult =
@@ -438,6 +439,7 @@ export async function addPlaceAtCoords(
   lat: number,
   lng: number,
   addedByName: string,
+  kind: string = "other",
 ): Promise<ActionResult> {
   const cleanName = cleanString(name, 120);
   if (!cleanName) return { ok: false, error: "Place needs a name" };
@@ -468,6 +470,10 @@ export async function addPlaceAtCoords(
   // Free-text address — capped at 240 chars, no validation. Stored as-is.
   const cleanAddress = address ? cleanString(address, 240) || null : null;
 
+  // Whitelist `kind` — anything not in the curated set falls back to "other"
+  // so a client posting a junk value can't poison the row.
+  const cleanKind = isKnownPlaceCategoryId(kind) ? kind : "other";
+
   if (placeAlreadyExists({ url: cleanUrl, lat, lng })) {
     revalidatePath("/");
     return { ok: true };
@@ -483,7 +489,7 @@ export async function addPlaceAtCoords(
     cleanUrl,
     lat,
     lng,
-    "reference",
+    cleanKind,
     addedBy || null,
   );
 

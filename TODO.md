@@ -99,10 +99,15 @@ a real "argument-settler" layer.
   voter click the map to add a place with name, optional address, optional
   URL. `addPlaceAtCoords` in `actions.ts` skips geocoding (lat/lng come
   straight from the click).
-- **Categorize**: theme park, restaurant, beach, museum, bar, airport,
-  grocery, etc. Curated picker + free-text. Use different marker colors /
-  icons per category so the map stays readable when 30 pins are on it.
-  Currently `places.kind` is hardcoded to `"reference"` for drop-pins.
+- ~~**Categorize**: theme park, restaurant, beach, museum, bar, airport,
+  grocery, etc.~~ — **DONE.** Curated 10-category set lives in
+  `src/lib/place-categories.ts` (theme-park · restaurant · bar · beach ·
+  museum · airport · grocery · nature · shopping · other). Drop-pin form
+  shows a chip-row picker; markers render as color-coded dots with the
+  category emoji centered. Legacy `kind = "reference"` rows fall back
+  to the "Other" category in the UI without a migration.
+  - **Still open:** free-text category alongside the curated picker, if
+    someone wants a niche tag the curated set doesn't cover.
 - **Notes field** — "this is the one with the good sushi", "kids loved
   this last time", etc. Drop-pin form already has a `url` slot; a free-
   text note would be the natural next field.
