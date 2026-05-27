@@ -42,6 +42,24 @@ async function makePage(browser, { viewport = "desktop", signedIn = true } = {})
     viewport: VIEWPORTS[viewport],
     colorScheme: "dark",
   });
+  // Server-side gate (post 2026-05-27 privacy audit) reads the voter
+  // identity from a cookie, not localStorage — so the cookie has to be
+  // primed BEFORE the first navigation or SSR will treat the visitor
+  // as anonymous and skip rendering listings/participants/etc.
+  if (signedIn) {
+    const url = new URL(BASE_URL);
+    await ctx.addCookies([
+      {
+        name: "staybattle_voter",
+        value: JSON.stringify({ id: DEMO_VOTER.id, name: DEMO_VOTER.name }),
+        domain: url.hostname,
+        path: "/",
+        httpOnly: false,
+        secure: false,
+        sameSite: "Lax",
+      },
+    ]);
+  }
   const page = await ctx.newPage();
   // Pre-set localStorage flags BEFORE any page UI renders. This
   // includes dismissing the demo-mode modal so it doesn't blanket

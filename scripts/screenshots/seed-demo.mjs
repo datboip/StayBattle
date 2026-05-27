@@ -152,6 +152,14 @@ db.prepare(
   `insert into settings (key, value) values ('trip_check_out', ?)`,
 ).run(DEMO_BATTLE.check_out);
 
+// Seed a small must-haves list so the per-card "Must-haves" row appears
+// in the voting-grid screenshot — otherwise the new feature is invisible
+// in the marketing visuals. Picks the common ones every screenshot will
+// have varied coverage on (pool, wifi, parking, kitchen).
+db.prepare(
+  `insert into settings (key, value) values ('battle_requirements', ?)`,
+).run(JSON.stringify(["wifi", "pool", "parking", "kitchen"]));
+
 // All demo voters are participants in this battle.
 console.log("Inserting participants…");
 const insertPart = db.prepare(
