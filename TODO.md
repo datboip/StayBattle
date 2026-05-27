@@ -125,8 +125,12 @@ a real "argument-settler" layer.
   the hidden state. Persists to `localStorage` under `sb-map-hidden-kinds`.
 - ~~**No scraping at all**~~ — **DONE / by-design.** Drop-pin is pure
   user input; no Nominatim call required for placement.
-- **Light dedup** — if two people drop a pin within ~50m of the same name,
-  merge them. Show "added by Alice, Bob" so the group sees consensus.
+- ~~**Light dedup**~~ — **DONE.** `addPlaceAtCoords` runs a bounding-box +
+  haversine check against existing pins on insert. Same normalized name
+  (case + punctuation + whitespace folded) within ~50m → contributor
+  appended to `added_by_name` ("Alice, Bob, Carol") and no duplicate row
+  inserted. Different name within 50m still allowed (strip-mall case).
+  Pure helpers + 13 unit tests in `src/lib/place-dedup.ts`.
 
 The reason this is good: vacation arguments are rarely about *which*
 listing per se — they're about *where the trip should be anchored*. A map

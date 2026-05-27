@@ -39,6 +39,8 @@ import {
   VOTER_ID_MAX,
 } from "@/lib/validate";
 import { isKnownPlaceCategoryId } from "@/lib/place-categories";
+import { haversineKm } from "@/lib/distance";
+import { normalizePlaceName, mergeContributor } from "@/lib/place-dedup";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 export type SignInResult =
@@ -474,6 +476,22 @@ export async function addPlaceAtCoords(
   // so a client posting a junk value can't poison the row.
   const cleanKind = isKnownPlaceCategoryId(kind) ? kind : "other";
 
+  // Light dedup: if a place with this same name already exists within
+  // ~50m, merge the new submitter into its `added_by_name` list instead
+  // of inserting a duplicate row. Surfaces "added by Alice, Bob" so the
+  // crew sees consensus building. Different-name pins at the same spot
+  // (a strip mall, etc.) are still allowed — name match is required.
+  const merged = mergeSameNameNearby({
+    name: cleanName,
+    lat,
+    lng,
+    addedBy: addedBy || "",
+  });
+  if (merged) {
+    revalidatePath("/");
+    return { ok: true };
+  }
+
   if (placeAlreadyExists({ url: cleanUrl, lat, lng })) {
     revalidatePath("/");
     return { ok: true };
@@ -495,6 +513,59 @@ export async function addPlaceAtCoords(
 
   revalidatePath("/");
   return { ok: true };
+}
+
+/**
+ * If a place with the normalized form of `name` already sits within
+ * ~50m of (lat, lng), merge `addedBy` into its contributor list and
+ * return true. Returns false when no match — caller proceeds with the
+ * normal insert.
+ */
+function mergeSameNameNearby({
+  name,
+  lat,
+  lng,
+  addedBy,
+}: {
+  name: string;
+  lat: number;
+  lng: number;
+  addedBy: string;
+}): boolean {
+  const normalized = normalizePlaceName(name);
+  if (!normalized) return false;
+  // Bounding-box pre-filter: ~110m latitude buffer (0.001°) so the
+  // haversine check below has a small candidate set to walk. lng buffer
+  // scales with cos(lat) so high latitudes don't run a too-wide query.
+  const latBuf = 0.001;
+  const lngBuf = 0.001 / Math.max(0.01, Math.cos((lat * Math.PI) / 180));
+  const candidates = db
+    .prepare(
+      `select id, name, latitude, longitude, added_by_name from places
+       where latitude between ? and ?
+         and longitude between ? and ?`,
+    )
+    .all(lat - latBuf, lat + latBuf, lng - lngBuf, lng + lngBuf) as Array<{
+    id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    added_by_name: string | null;
+  }>;
+  for (const c of candidates) {
+    if (normalizePlaceName(c.name) !== normalized) continue;
+    const km = haversineKm({ lat, lng }, { lat: c.latitude, lng: c.longitude });
+    if (km > 0.05) continue; // tighter than the pre-filter — ~50m hard cap
+    const next = mergeContributor(c.added_by_name, addedBy);
+    if (next !== null) {
+      db.prepare("update places set added_by_name = ? where id = ?").run(
+        next,
+        c.id,
+      );
+    }
+    return true;
+  }
+  return false;
 }
 
 export async function removePlace(placeId: string): Promise<ActionResult> {
