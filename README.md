@@ -5,7 +5,7 @@
 # StayBattle
 
 **Settle the vacation argument.**
-Pit Airbnb listings against each other. Vote, argue in the comments, settle it on the map.
+Pit Airbnb listings against each other. Rate, argue in the comments, settle it on the map.
 
 [![CI](https://github.com/datboip/StayBattle/actions/workflows/ci.yml/badge.svg)](https://github.com/datboip/StayBattle/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL_v3-blue.svg)](LICENSE)
@@ -13,7 +13,34 @@ Pit Airbnb listings against each other. Vote, argue in the comments, settle it o
 [![Self-hosted](https://img.shields.io/badge/self--hosted-%E2%9C%93-purple)](https://github.com/awesome-selfhosted/awesome-selfhosted)
 [![No tracking](https://img.shields.io/badge/tracking-none-success)](#privacy)
 
+**[🌐 Live demo](https://app.staybattle.com) · [📖 Brand](https://staybattle.com/brand) · [🛡 Privacy](PRIVACY.md) · [📜 Terms](TOS.md)**
+
 </div>
+
+---
+
+## 🌐 Try the live demo
+
+A public demo runs at **<https://app.staybattle.com>** with pre-seeded
+fake data. Anything you do there gets wiped at **04:00 UTC nightly**.
+
+Sign in with any of these demo accounts (PINs are scrypt-hashed
+server-side; the modal in the app shows the same list):
+
+| Name   | PIN  | Role      |
+|--------|------|-----------|
+| Alex   | 1111 | Organizer |
+| Sam    | 2222 | Voter     |
+| Jordan | 3333 | Voter     |
+| Riley  | 4444 | Voter     |
+| Casey  | 5555 | Voter     |
+| Morgan | 6666 | Voter     |
+| Drew   | 7777 | Voter     |
+| Quinn  | 8888 | Voter     |
+
+Invite code: `DEMO99`. Sign in as **Alex / 1111** to try the
+organizer powers (close the battle, kick voters, edit dates,
+set must-haves). Everyone else is a regular voter.
 
 ---
 
@@ -60,17 +87,13 @@ The installer does exactly four things: check Docker is installed, pull the imag
 >   - **[Tailscale](https://tailscale.com)** if your crew is already on your tailnet — share the machine's tailnet IP.
 >   This is how the live demo at <https://app.staybattle.com> works: Docker + a named Cloudflare Tunnel + a domain you own.
 
-<!-- TODO: drop a 10-15 second screencap GIF here once we have one. Show the
-flow: name+PIN → set up battle → drop an Airbnb URL → see the fighter card. -->
-<!-- ![StayBattle demo](docs/screenshots/demo.gif) -->
-
 ## Why this exists
 
 Real talk: my family **cannot** pick a vacation rental. Every single time. Six people, twelve Airbnb candidates, four group texts, zero structure. Someone screenshots one in the chat. Someone else replies "no, this one." Someone DMs you privately "tell them my one was better." After an hour, nobody knows what the actual options are anymore. Trip is soon. Cool.
 
 So I turned the family-vacation-argument into a dope little app.
 
-**Drop every candidate Airbnb URL into one place. Vote together. Comment together. Argue in the open. Settle it on the map.** Real availability check against Airbnb's own booking widget so nobody picks a place that's actually booked. Trophy case at the end so we remember which house won. Done.
+**Drop every candidate Airbnb URL into one place. Rate together. Comment together. Argue in the open. Settle it on the map.** Real availability check against Airbnb's own booking widget so nobody picks a place that's actually booked. Trophy case at the end so we remember which house won. Done.
 
 You still book on Airbnb. StayBattle is the meeting table, not the storefront.
 
@@ -78,37 +101,56 @@ You still book on Airbnb. StayBattle is the meeting table, not the storefront.
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/voting-grid.png" alt="Voting grid with ranked listings" /></td>
-<td width="50%"><img src="docs/screenshots/battle-header.png" alt="Battle header with invite code panel" /></td>
+<td width="50%"><img src="docs/screenshots/voting-grid.png" alt="Voting grid with ranked listings, 1–5 rating sliders, must-haves checklist, and BOOKED stamp on a booked listing" /></td>
+<td width="50%"><img src="docs/screenshots/battle-header.png" alt="Battle header with trip dates, invite code panel, and crew list" /></td>
 </tr>
 <tr>
-<td><b>The roster.</b> Every submission ranked by score, with real availability badges, prices, and a one-click path to verify on Airbnb.</td>
-<td><b>The battle.</b> Trip dates + invite code + crew list. Organizer can re-check all dates, close the battle, or start fresh.</td>
+<td><b>The roster.</b> Every submission ranked by mean rating, with status-colored availability badges, prices, must-haves checklist, "Nearby" drive-time pills to your pinned places, and a one-click path to verify on Airbnb. Booked listings get a full-card <code>BOOKED</code> rubber stamp.</td>
+<td><b>The battle.</b> Trip dates + invite code + crew list. Organizer can re-check all dates, set must-have amenities, close the battle, or start fresh.</td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/map.png" alt="Map of all listings + reference places" /></td>
-<td><img src="docs/screenshots/sign-in-mobile.png" alt="Mobile sign-in" width="50%" /></td>
+<td><img src="docs/screenshots/map.png" alt="Map of Orlando with status-colored listing pins and category-colored reference places, plus filter chips at the bottom" /></td>
+<td><img src="docs/screenshots/review-mode.png" alt="Swipe-through review mode with the large 1–5 rating slider (Nope · Meh · OK · Like · Love)" /></td>
 </tr>
 <tr>
-<td><b>The map.</b> Every candidate as a pin, plus reference places (theme parks, restaurants, the wedding venue, whatever). Real OpenStreetMap, no API keys.</td>
-<td><b>Mobile-first.</b> Sign-in, voting, comments — all responsive. Your crew uses their phones, this works on their phones.</td>
+<td><b>The map.</b> Every candidate as a status-colored teardrop (teal=available, rose-with-✕=booked, amber=unknown). Drop reference pins for theme parks, restaurants, airports, the wedding venue — categorized so the map color-codes them, with filter chips to hide categories. OpenStreetMap tiles, no API keys.</td>
+<td><b>Swipe-through review.</b> One-card-at-a-time mode. Big slider with the Nope · Meh · OK · Like · Love labels. Keyboard shortcuts (1–5 set the rating, ← / → navigate, Esc bails) on a laptop, swipe on a phone.</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/iphone-review-mode.png" alt="StayBattle review mode on an iPhone with the rating slider visible" /></td>
+<td><img src="docs/screenshots/trophy-case.png" alt="Trophy case showing the gold/silver/bronze podium for past battles" /></td>
+</tr>
+<tr>
+<td><b>Mobile-first.</b> Sign-in, voting, comments, drop-pin, swipe-review — all responsive. Your crew uses their phones, this works on their phones.</td>
+<td><b>Trophy case.</b> Past battles get archived as gold/silver/bronze podiums. Dates round to month-only and the clickable Airbnb URL is stripped on archive — the case is a memento, not a permanent doxxing surface.</td>
 </tr>
 </table>
 
 ## What it does
 
-1. **Organizer** sets up a battle: trip name, dates, submission deadline.
+1. **Organizer** sets up a battle: trip name, dates, submission deadline, optional **must-have amenities** (wifi, pool, parking, etc.).
 2. **Crew joins** with an invite code, each with their own name + PIN.
-3. **Submission phase** — everyone pastes Airbnb URLs in. The server grabs photos, location, beds/baths, and rating. Others see only anonymized photos until the deadline — no name-dropping, no bias.
-4. **Battle phase** — at the deadline (or when the organizer hits "start now"), everyone can see all submissions. Rate each one **1–5** (Nope · Meh · OK · Like · Love). Leave trash talk. Each submitter's pre-submission "case" sits pinned at the top of the comments.
+3. **Submission phase** — everyone pastes Airbnb URLs in. The server grabs photos, location, beds/baths, rating, and amenity tags from Airbnb's own GraphQL endpoint. Others see only anonymized photos until the deadline — no name-dropping, no bias.
+4. **Battle phase** — at the deadline (or when the organizer hits "start now"), everyone can see all submissions. Rate each one **1–5** on a slider (Nope · Meh · OK · Like · Love). Leave trash talk. Each submitter's pre-submission "case" sits pinned at the top of the comments. **You can't rate your own submission** — no ballot stuffing.
 5. **Swipe-through review** — a one-card-at-a-time mode for going through the pile; drag the slider to rate, swipe direction follows the score.
-6. **Map** — all listings + any landmarks you pin (resorts, theme parks, dinner spots).
+6. **Map** — every candidate as a status-colored teardrop pin. Anyone can drop a categorized reference pin (theme parks, restaurants, airports, etc.) — no geocoding needed, click the map. Filter chips toggle categories on/off. Each listing card shows real OSRM-routed **drive times** to the 3 closest pinned places.
+7. **Close + archive** — organizer closes the battle. Top 3 (with ties grouped as co-medalists) get archived to the trophy case with month-rounded dates and scrubbed URLs. Past battles persist across sessions so trip #2 remembers what won trip #1.
 
 You click through to Airbnb to actually book. StayBattle never replaces that step.
 
 ### Identity = name + PIN, no accounts
 
-First time you use a name, you claim it with any 4–6 digit PIN. After that, the same name+PIN on any device signs you into the same identity — your votes follow you. No email signup, no OAuth, no Google login, no nothing. PINs are [scrypt-hashed](SECURITY.md) with a per-voter random salt; rate-limited to 5 attempts/min/name.
+First time you use a name, you claim it with any 4–6 digit PIN. After that, the same name+PIN on any device signs you into the same identity — your ratings follow you. No email signup, no OAuth, no Google login, no nothing. PINs are [scrypt-hashed](SECURITY.md) (N=16384) with a per-voter random salt; rate-limited to 5 attempts/min/name.
+
+### Self-host vs. live demo
+
+| | Live demo at <app.staybattle.com> | Self-hosted |
+|---|---|---|
+| **Data persistence** | Wiped nightly at 04:00 UTC | Forever (it's your SQLite file) |
+| **Airbnb scraping** | Pre-baked statuses (demo mode) | Real GraphQL availability check |
+| **Sign-in** | Use the 8 demo accounts above | Anyone with the URL claims a name |
+| **Cost** | Free, no signup | Free, no signup, your hardware |
+| **Best for** | Kicking the tires | Actual trip planning |
 
 ## Other ways to install
 
@@ -137,17 +179,25 @@ StayBattle works with zero config. If you want to tweak:
 |---|---|---|
 | `STAYBATTLE_PORT` | `3000` | Port for the install script. |
 | `STAYBATTLE_DIR`  | `~/staybattle` | Where SQLite + data live. |
+| `STAYBATTLE_DB_DIR` | `./data` | Where the SQLite DB lives (production override). |
+| `STAYBATTLE_DEMO_MODE` | (unset) | When `true`: skip Airbnb GraphQL availability calls, use pre-baked statuses (avoids rate-limiting). Used by the public demo. |
+| `STAYBATTLE_OSRM_URL` | `https://router.project-osrm.org` | OSRM server for drive-time routing on the "Nearby" pills. Point at a self-hosted OSRM when traffic outgrows the public demo. |
 | `NEXT_ALLOWED_DEV_ORIGINS` | (unset) | Extra hostnames allowed to hit dev-mode HMR. Private RFC1918 IP ranges already match. |
 
 ## Admin? You.
 
 There's no separate admin page because **the person who installs it owns the box**, and the **organizer of each battle owns the battle**. The organizer has everything they need inside the UI:
 
-- Edit battle name, dates, deadline
+- Edit battle name, dates, deadline, must-have amenities
 - Start the battle early (skip waiting for the deadline)
 - Generate / regenerate the invite code
-- Kick participants
+- Force-recheck availability for all listings
+- Kick participants (with or without removing their votes)
+- Override a stale availability status with a note
+- Close + archive the battle to the trophy case
 - Reset the whole battle and start fresh
+
+Instance operators (whoever runs the box) also have a one-line CLI for DMCA takedowns: `node scripts/admin/remove-url.mjs <url> "<reason>"` — see [SECURITY.md](SECURITY.md#takedown-requests-dmca-host-opt-out-other).
 
 If you ever need server-wide config, edit env vars and re-run the install script. No separate dashboard, no separate login, no separate threat surface.
 
@@ -161,6 +211,8 @@ For friends off your network:
 - **ngrok** — `npx ngrok http 3000` gives you a public URL. Anyone with it can sign up — protect with the invite code anyway.
 - **Small VPS** — see `Dockerfile`. Anything that runs a container works.
 
+Invite links use a URL fragment (`#invite=ABCDEF`) so the code never reaches server logs — your nginx access log can't accidentally retain the invite when someone clicks the link.
+
 ## Stack
 
 - **Next.js 16** App Router (Turbopack)
@@ -168,9 +220,10 @@ For friends off your network:
 - **SQLite** via `better-sqlite3`
 - **Tailwind 4**
 - **Leaflet** + OpenStreetMap (no API key)
+- **OSRM** (`router.project-osrm.org` by default, configurable) for drive-time routing
 - **cheerio** for HTML parsing
 - **scrypt** (Node built-in) for PIN hashing
-- **Vitest** for tests
+- **Vitest** for tests (144 covering rank, podium, distance, routing, requirements, place-dedup, geocode, scrape, validate, auth, battle, trip, title, invite, rate-limit, availability)
 
 ## Development
 
@@ -185,19 +238,43 @@ npm start            # serve the production build
 
 CI runs typecheck, tests, and build on every push and PR (`.github/workflows/ci.yml`). A separate workflow (`.github/workflows/docker.yml`) builds and publishes the Docker image to GHCR on every push to `main` and on every tag.
 
+### Regenerating screenshots
+
+The README's screenshots all live in [`docs/screenshots/`](docs/screenshots/) and are committed to git. To regenerate them:
+
+```bash
+# 1. Build a clean demo DB from the real DB's listings + fake social data
+node scripts/screenshots/seed-demo.mjs
+
+# 2. Spin up a second dev server pointed at the demo DB
+STAYBATTLE_DB_DIR=./data-demo STAYBATTLE_DEMO_MODE=true npx next dev --port 3001
+
+# 3. Capture screenshots (in another terminal)
+BASE_URL=http://localhost:3001 \
+  DEMO_VOTER_ID=$(sqlite3 data-demo/quickie.db "select id from voters where name='Alex'") \
+  DEMO_VOTER_NAME=Alex \
+  node scripts/screenshots/capture.mjs
+```
+
+The capture script also bakes phone-frame mockups (`iphone-review-mode.png`, `pixel-review-mode.png`) by wrapping the mobile screenshots in an SVG iPhone / Pixel frame + iOS-style status bar at the top.
+
 ## Privacy
 
-StayBattle is built for small private groups:
+StayBattle is built for small private groups. See [PRIVACY.md](PRIVACY.md) for the full threat model + what's still soft.
 
 - No analytics, no tracking pixels, no third-party JavaScript loaded into the page.
 - **One cookie**: a same-site `staybattle_voter` cookie set on sign-in so the server-side gate can tell whether to render battle data (added 2026-05-27 to close a leak where anonymous visitors could `curl` the page and get the invite code + every comment). Mirrored to `localStorage` for the client UI. Cleared on sign-out. Not third-party. Not analytics.
+- **Invite codes ride in the URL fragment** (`#invite=…`), not the query string — fragments never reach the server, so nginx access logs / Cloudflare logs / browser referer headers never capture them.
+- **nginx logs use a scrubbed format** that drops query strings entirely (belt-and-suspenders against the above).
+- **Past-battle archives are date-scrubbed** to month/year and have the clickable Airbnb URL stripped — the trophy case can't pinpoint "the crew was at this exact rental from <day> to <day>" after the trip.
 - No telemetry. Next.js telemetry is disabled in the Dockerfile.
 - All data is in a single SQLite file. Delete it to nuke everything.
 
 Outbound traffic, in full:
 
-- When a user adds a URL: one HTTP request to `airbnb.com` to fetch the listing page.
-- When a user pins a place: one HTTP request to `nominatim.openstreetmap.org` for geocoding.
+- When a user adds a URL: one HTTP request to `airbnb.com` to fetch the listing page (skipped in `STAYBATTLE_DEMO_MODE=true`).
+- When a user pins a place via address (drop-pin works without this): one HTTP request to `nominatim.openstreetmap.org` for geocoding.
+- When a battle has reference places + listings with coordinates: one HTTP request to OSRM (`router.project-osrm.org` by default) per SSR to compute drive-time pills.
 - When the map is open: tile images from `*.tile.openstreetmap.org`.
 
 That's the entire list.
@@ -209,6 +286,8 @@ That's the entire list.
 This project is a **decision-support tool** that helps small groups organize their own discussions about Airbnb listings they're considering. The tool **never replaces Airbnb's booking flow** — every action links you back to Airbnb to actually book. There is no bulk scraping, no discovery / search functionality, no listing aggregation. The server fetches a single page only when a user pastes a URL they already have.
 
 Each user is responsible for their own use of this software with respect to Airbnb's Terms of Service. The software is provided **AS IS, without warranty of any kind**, per AGPL v3.
+
+Terms of service for users of the live demo at app.staybattle.com are in [TOS.md](TOS.md). Privacy practices are in [PRIVACY.md](PRIVACY.md). Security policy + DMCA takedown procedure are in [SECURITY.md](SECURITY.md).
 
 If you're with Airbnb and want to talk — partnership, licensing, taking this down, anything in between — the maintainer email is in the git log.
 
