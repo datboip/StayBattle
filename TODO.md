@@ -146,6 +146,30 @@ Single-page Astro + Tailwind, reuses the existing brand assets, links
 to the GitHub repo + a live demo. ~5 hr v1 build, separate session
 from app work.
 
+## Back up the SQLite DB when flipping to real production
+
+Right now the live VPS deployment runs with `STAYBATTLE_DEMO_MODE=true`
+(see `staybattle-site/infra/staybattle.service`). Everything in
+`/var/lib/staybattle/quickie.db` is reseedable from
+`scripts/screenshots/seed-demo.mjs` — zero data-loss risk if the disk dies.
+
+The moment that env flag flips to false and real users start submitting
+listings and casting votes, the DB becomes precious. Before that
+happens, set up:
+
+- Daily cron `cp /var/lib/staybattle/quickie.db /backups/quickie-$(date +%Y%m%d).db`
+  with a `sqlite3 .backup` command so it's safe against in-flight writes,
+  not just a raw file copy.
+- Off-box destination — Cloudflare R2, S3, or even a `scp` to a separate
+  machine. The whole point is "if the VPS disk dies, we still have the
+  votes." Same-box backups don't qualify.
+- Retention policy — 30 daily snapshots, ~30 × ~few-MB = trivial cost.
+- Restore drill — once a quarter, pull the latest snapshot to a scratch
+  box and verify the schema migrations + a sample query still work.
+
+Currently no urgency. Capture this here so the moment we have a real
+user, this isn't a fire drill.
+
 ## Other ideas
 
 - **Price snapshot on demand** — a one-shot "fetch a price" button (organizer
