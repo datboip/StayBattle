@@ -34,7 +34,10 @@
 set -e
 
 REPO="datboip/StayBattle"
-IMAGE="ghcr.io/${REPO}:latest"
+# Pin to a specific release with: STAYBATTLE_TAG=v0.4.0 sh install.sh
+# Defaults to :latest, which tracks main and may move under you.
+TAG="${STAYBATTLE_TAG:-latest}"
+IMAGE="ghcr.io/${REPO}:${TAG}"
 DEFAULT_PORT=3000
 DEFAULT_DIR="${HOME}/staybattle"
 CONTAINER_NAME="staybattle"
@@ -91,7 +94,7 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
 fi
 
 # ---- pull image ----
-say "Pulling latest image from ghcr.io…"
+say "Pulling ${IMAGE} from ghcr.io…"
 docker pull "${IMAGE}"
 
 # ---- run ----

@@ -4,10 +4,24 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-05-28
+
+First versioned cut. Everything that landed between the initial `0.1.0` seed and the v0.4.0 tag is grouped here, plus the versioning + release-pipeline work itself.
+
+### Added — versioning & release pipeline
+- `package.json` now carries a real semver (`0.4.0`).
+- Build-time version stamp: `scripts/build-version.mjs` generates `src/lib/version.ts` (gitignored) from `package.json` + `git rev-parse HEAD`, with `dirty` detection.
+- Version surfaced in four places: page footer, Help modal "About this build" section, Demo modal subtitle, and `<meta name="staybattle-version">` in the document head.
+- `/api/version` JSON endpoint for uptime checks and "is this still my build?" probes.
+- GitHub Actions release workflow (`.github/workflows/release.yml`) that auto-creates a Release with CHANGELOG-extracted notes when a `v*` tag is pushed.
+- `install.sh` accepts `STAYBATTLE_TAG=v0.4.0` to pin a specific image.
+
 ### Changed
 - **Voting is now a 1–5 slider** (Nope · Meh · OK · Like · Love) instead of thumb up / thumb down. Scores are now means in the 1.0–5.0 range; old `-1 / +1` rows are migrated to `1` / `5` on first boot.
 - Roster sort modes are now **score · votes (count) · recent** — the old "raw upvotes" mode is gone.
 - Brand book moved to a canonical URL at [staybattle.com/brand](https://staybattle.com/brand). The app subdomain redirects `/brand` to that page.
+- Public SSR is now gated server-side: anonymous visitors see only the join prompt + trophy case; no battle payload leaks via `curl /`.
+- `FlashbangBanner` renamed to `DarkModeWarning` internally (UI copy unchanged).
 
 ### Added
 - **Drop-a-pin** mode on the map: organizers and crew can click anywhere to add a reference place with a name, optional address, and optional URL — no geocoding required.

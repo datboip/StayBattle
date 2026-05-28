@@ -18,13 +18,14 @@ import { ListingGrid } from "@/components/ListingGrid";
 import { MapSection } from "@/components/MapSection";
 import { BattleSetup } from "@/components/BattleSetup";
 import { BattleHeader } from "@/components/BattleHeader";
-import { FlashbangBanner } from "@/components/FlashbangBanner";
+import { DarkModeWarning } from "@/components/DarkModeWarning";
 import { SubmissionPhase } from "@/components/SubmissionPhase";
 import { InviteCodePanel } from "@/components/InviteCodePanel";
 import { AvailabilityPanel } from "@/components/AvailabilityPanel";
 import { JoinGate } from "@/components/JoinGate";
 import { TrophyCase } from "@/components/TrophyCase";
 import { DemoModal } from "@/components/DemoModal";
+import { VERSION, GIT_SHA_SHORT, GIT_DIRTY } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
 
@@ -73,10 +74,10 @@ export default async function Home() {
   // exposes only the battle name + JoinGate prompt + past-battles
   // social proof.
   //
-  // PRIVACY: this is the closure for HIGH#1 from the audit
-  // (2026-05-27) — the previous JoinGateWrapper was CLIENT-only, so
-  // `curl /` returned the entire battle payload (invite code, lat/lng,
-  // every comment body) regardless of who was visiting.
+  // PRIVACY: the previous JoinGateWrapper was CLIENT-only, so `curl /`
+  // returned the entire battle payload (invite code, lat/lng, every
+  // comment body) regardless of who was visiting. Server-side gate
+  // here means anonymous requests can't see battle data.
   const cookieVoter = await readVoterCookie();
   const isMember = !!(
     battle && cookieVoter && isParticipant(battle.id, cookieVoter.id)
@@ -132,7 +133,7 @@ export default async function Home() {
         ) : (
           <>
             <BattleHeader battle={battle} />
-            <FlashbangBanner battle={battle} />
+            <DarkModeWarning battle={battle} />
             <InviteCodePanel battle={battle} participants={participants} />
             {battle.phase === "submission" ? (
               <>
@@ -207,6 +208,26 @@ export default async function Home() {
               className="underline decoration-zinc-700 hover:text-zinc-200 hover:decoration-cyan-400"
             >
               Source code
+            </a>
+          </p>
+          <p className="font-mono text-[10px] text-zinc-600">
+            <a
+              href={`https://github.com/datboip/StayBattle/releases/tag/v${VERSION}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-zinc-400"
+            >
+              v{VERSION}
+            </a>
+            {" · "}
+            <a
+              href={`https://github.com/datboip/StayBattle/commit/${GIT_SHA_SHORT}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-zinc-400"
+            >
+              {GIT_SHA_SHORT}
+              {GIT_DIRTY ? "-dirty" : ""}
             </a>
           </p>
         </footer>

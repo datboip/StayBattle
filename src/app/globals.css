@@ -336,7 +336,7 @@ html[data-theme="light"] input:-webkit-autofill:focus {
   animation: sb-tile-fade-in 900ms ease-out forwards;
 }
 
-/* Flashbang outline for the Airbnb-link warning dialog.
+/* Glowing outline for the dark-mode link warning dialog.
  *
  * Two animations stacked:
  *   1. Initial pulse — box-shadow ramps from nothing to bright then
@@ -364,7 +364,7 @@ html[data-theme="light"] input:-webkit-autofill:focus {
   inherits: false;
 }
 
-@keyframes sb-flashbang-pulse {
+@keyframes sb-darkmode-pulse {
   0% {
     box-shadow:
       0 0 0 0 rgba(255, 255, 255, 0),
@@ -382,17 +382,17 @@ html[data-theme="light"] input:-webkit-autofill:focus {
   }
 }
 
-@keyframes sb-flashbang-trace {
+@keyframes sb-darkmode-trace {
   to { --sb-glow-angle: 360deg; }
 }
-@keyframes sb-flashbang-trace-b {
+@keyframes sb-darkmode-trace-b {
   from { --sb-glow-angle-b: 180deg; }
   to   { --sb-glow-angle-b: 540deg; }
 }
 
-.sb-flashbang-glow {
+.sb-darkmode-glow {
   position: relative;
-  animation: sb-flashbang-pulse 900ms ease-out forwards;
+  animation: sb-darkmode-pulse 900ms ease-out forwards;
 }
 
 /* Two arcs tracing the perimeter, 180° apart from each other.
@@ -408,8 +408,8 @@ html[data-theme="light"] input:-webkit-autofill:focus {
  * peak (browser quirks / interpolation). Two separate gradient
  * layers guarantee both arcs paint.
  */
-.sb-flashbang-glow::before,
-.sb-flashbang-glow::after {
+.sb-darkmode-glow::before,
+.sb-darkmode-glow::after {
   content: "";
   position: absolute;
   inset: -2px;
@@ -424,7 +424,7 @@ html[data-theme="light"] input:-webkit-autofill:focus {
   pointer-events: none;
 }
 
-.sb-flashbang-glow::before {
+.sb-darkmode-glow::before {
   background: conic-gradient(
     from var(--sb-glow-angle, 0deg),
     transparent 0deg,
@@ -433,10 +433,10 @@ html[data-theme="light"] input:-webkit-autofill:focus {
     transparent 40deg,
     transparent 360deg
   );
-  animation: sb-flashbang-trace 7s linear 900ms infinite;
+  animation: sb-darkmode-trace 7s linear 900ms infinite;
 }
 
-.sb-flashbang-glow::after {
+.sb-darkmode-glow::after {
   background: conic-gradient(
     from var(--sb-glow-angle-b, 180deg),
     transparent 0deg,
@@ -445,13 +445,13 @@ html[data-theme="light"] input:-webkit-autofill:focus {
     transparent 40deg,
     transparent 360deg
   );
-  animation: sb-flashbang-trace-b 7s linear 900ms infinite;
+  animation: sb-darkmode-trace-b 7s linear 900ms infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sb-flashbang-glow { animation: none; }
-  .sb-flashbang-glow::before,
-  .sb-flashbang-glow::after { animation: none; opacity: 0; }
+  .sb-darkmode-glow { animation: none; }
+  .sb-darkmode-glow::before,
+  .sb-darkmode-glow::after { animation: none; opacity: 0; }
 }
 
 /* Custom scrollbars across the app — native ones break the dark/neon vibe. */

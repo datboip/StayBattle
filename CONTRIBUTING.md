@@ -38,6 +38,22 @@ Use the templates in `.github/ISSUE_TEMPLATE/`. The maintainers respond best to:
 - Repro steps if it's a bug. *"Add this URL, click that, observe…"*
 - Screenshots for UI bugs (drag-and-drop into the issue body).
 
+## Cutting a release
+
+Versions live in `package.json`. The footer, Help modal, Demo modal, `<meta>` tag, and `/api/version` all read from `src/lib/version.ts`, which is **generated** by `scripts/build-version.mjs` at build time (and on `npm run dev` / `npm run typecheck` via the `pre*` hooks) — don't edit it by hand.
+
+To cut a new release:
+
+1. Update `CHANGELOG.md` — move items out of `[Unreleased]` into a new dated section: `## [X.Y.Z] — YYYY-MM-DD`.
+2. Bump `version` in `package.json`.
+3. Commit: `chore(release): vX.Y.Z`.
+4. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
+5. Push: `git push origin main vX.Y.Z`.
+
+Pushing the tag triggers `.github/workflows/release.yml`, which creates a GitHub Release using the matching section of `CHANGELOG.md` as the body, and `.github/workflows/docker.yml`, which publishes the multi-arch image to GHCR tagged with both `vX.Y.Z` and `latest`.
+
+Semver, loosely: `MAJOR` for breaking changes to the on-disk schema or CLI flags; `MINOR` for user-visible features; `PATCH` for bug fixes and tone/copy.
+
 ## Style notes
 
 - Avoid `<div>` soup. Prefer semantic tags.

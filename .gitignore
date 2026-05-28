@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# generated at build time by scripts/build-version.mjs
+/src/lib/version.ts
+
 # production
 /build
 

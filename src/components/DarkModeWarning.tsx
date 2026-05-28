@@ -6,8 +6,8 @@ import type { Battle } from "@/lib/battle";
 
 /**
  * Catches clicks on any Airbnb link anywhere on the page and pops a
- * "you're about to get flashbanged" modal *before* opening the link.
- * Only triggers when:
+ * dark-mode-aware warning modal before opening the link. Only triggers
+ * when:
  *   1. User is in dark mode (light-mode users skip entirely — Airbnb is
  *      light too, no contrast shock)
  *   2. User hasn't ticked "don't show again" for this battle
@@ -17,8 +17,12 @@ import type { Battle } from "@/lib/battle";
  *
  * "Don't show again" is scoped to the current battle id, so a new
  * battle gets a fresh warning.
+ *
+ * (UI copy keeps the "flashbang / sunglasses" voice — that's the
+ * external brand. The component name and storage key are renamed for
+ * a calmer internal vocabulary.)
  */
-export function FlashbangBanner({ battle }: { battle: Battle | null }) {
+export function DarkModeWarning({ battle }: { battle: Battle | null }) {
   const { theme, ready } = useTheme();
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [dontShow, setDontShow] = useState(false);
@@ -32,7 +36,7 @@ export function FlashbangBanner({ battle }: { battle: Battle | null }) {
       return;
     }
     try {
-      const key = `staybattle:flashbang-warned:${battle.id}`;
+      const key = `staybattle:darkmode-warned:${battle.id}`;
       dismissedRef.current = window.localStorage.getItem(key) === "1";
     } catch {
       dismissedRef.current = false;
@@ -68,7 +72,7 @@ export function FlashbangBanner({ battle }: { battle: Battle | null }) {
     if (dontShow && battle) {
       try {
         window.localStorage.setItem(
-          `staybattle:flashbang-warned:${battle.id}`,
+          `staybattle:darkmode-warned:${battle.id}`,
           "1",
         );
         dismissedRef.current = true;
@@ -118,7 +122,7 @@ export function FlashbangBanner({ battle }: { battle: Battle | null }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="sb-flashbang-glow flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-zinc-700 bg-zinc-950 p-4 text-zinc-100 sm:gap-3.5 sm:p-5"
+        className="sb-darkmode-glow flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-zinc-700 bg-zinc-950 p-4 text-zinc-100 sm:gap-3.5 sm:p-5"
       >
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { useVoter } from "@/lib/voter";
 import type { Battle, PublicBattle } from "@/lib/battle";
+import {
+  VERSION,
+  GIT_SHA_SHORT,
+  GIT_DIRTY,
+  BUILT_AT,
+} from "@/lib/version";
 
 function QuestionIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -679,11 +685,61 @@ export function HelpButton({
                   kick you.
                 </p>
               </Section>
+
+              <Section title="About this build">
+                <p className="font-mono text-[12px] text-zinc-300">
+                  <span className="text-zinc-100">Version</span>{" "}
+                  <a
+                    href={`https://github.com/datboip/StayBattle/releases/tag/v${VERSION}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-zinc-700 hover:text-cyan-300 hover:decoration-cyan-400"
+                  >
+                    v{VERSION}
+                  </a>
+                  {" · "}
+                  <span className="text-zinc-100">Build</span>{" "}
+                  <a
+                    href={`https://github.com/datboip/StayBattle/commit/${GIT_SHA_SHORT}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-zinc-700 hover:text-cyan-300 hover:decoration-cyan-400"
+                  >
+                    {GIT_SHA_SHORT}
+                    {GIT_DIRTY ? "-dirty" : ""}
+                  </a>
+                  {" · "}
+                  <span className="text-zinc-100">Built</span>{" "}
+                  {BUILT_AT.slice(0, 10)}
+                </p>
+                <p className="text-[12px] text-zinc-400">
+                  StayBattle is open source under{" "}
+                  <a
+                    href="https://www.gnu.org/licenses/agpl-3.0.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-zinc-700 hover:text-zinc-200 hover:decoration-rose-400"
+                  >
+                    AGPL v3
+                  </a>
+                  . Source:{" "}
+                  <a
+                    href="https://github.com/datboip/StayBattle"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-zinc-700 hover:text-zinc-200 hover:decoration-cyan-400"
+                  >
+                    github.com/datboip/StayBattle
+                  </a>
+                  .
+                </p>
+              </Section>
             </div>
 
             {/* Footer */}
             <div className="shrink-0 border-t border-zinc-800 px-5 py-3 text-center text-[10px] uppercase tracking-wider text-zinc-500">
-              Unaffiliated with any listing service shown. · AS IS, no warranty · AGPL v3
+              v{VERSION} · {GIT_SHA_SHORT}
+              {GIT_DIRTY ? "-dirty" : ""} · AS IS, no warranty · AGPL v3
             </div>
           </div>
         </div>

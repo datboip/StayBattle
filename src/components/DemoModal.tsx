@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { VERSION, GIT_SHA_SHORT } from "@/lib/version";
 
 const STORAGE_KEY = "staybattle:demo-modal-dismissed:v1";
 
@@ -121,6 +122,10 @@ export function DemoModal({ enabled }: { enabled: boolean }) {
               dates). Anyone else is a regular voter.
             </p>
           </div>
+        </div>
+
+        <div className="px-6 pb-3 pt-1 text-[10px] font-mono text-zinc-600">
+          Demo running v{VERSION} · {GIT_SHA_SHORT}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-zinc-800 bg-zinc-950/60 px-6 py-4">

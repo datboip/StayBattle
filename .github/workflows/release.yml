@@ -1,0 +1,43 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Extract changelog section for this tag
+        id: notes
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          # Pull the block between "## [VERSION]" and the next "## [".
+          awk -v ver="$version" '
+            $0 ~ "^## \\[" ver "\\]" { in_block=1; next }
+            in_block && /^## \[/ { exit }
+            in_block { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            printf "Release %s\n\nSee CHANGELOG.md for details.\n" "$TAG" > release-notes.md
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.notes.outputs.tag }}
+          name: ${{ steps.notes.outputs.tag }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
