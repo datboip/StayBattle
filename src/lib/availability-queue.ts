@@ -9,9 +9,8 @@ import {
 import type { AvailabilityStatus } from "./types";
 
 /**
- * Sequential per-process queue of availability checks. We never hit Airbnb
- * with N parallel requests — that's the fastest path to being flagged as a
- * scraper. One at a time, ~1-2s apart.
+ * Sequential per-process queue of availability checks. Requests run one
+ * at a time with ~1-2s spacing to honor reasonable per-host pacing.
  */
 
 declare global {
@@ -28,9 +27,9 @@ const state =
   globalThis.__availability_queue ??
   (globalThis.__availability_queue = { running: false, pending: [] });
 
-// 1.2s gap between requests — drains 24 listings in ~30s, conservative enough
-// that Airbnb won't see a burst signature. Combined with the 30-min freshness
-// cache (skip listings checked recently), repeated organizer "recheck" clicks
+// 1.2s gap between requests — drains 24 listings in ~30s, well within
+// conservative per-host pacing. Combined with the 30-min freshness cache
+// (skip listings checked recently), repeated organizer "recheck" clicks
 // are no-ops, so spam-clicking won't accelerate the queue either.
 const DELAY_BETWEEN_MS = 1200;
 
@@ -98,10 +97,9 @@ export function queueAllListings(
   checkOut: string,
   force = false,
 ) {
-  // Public demo uses pre-baked availability statuses so it never has
-  // to call Airbnb (which is rate-limited and often blocked from the
-  // VPS IP). Self-hosters with STAYBATTLE_DEMO_MODE unset get the
-  // normal queue behavior.
+  // Public demo uses pre-baked availability statuses, no live calls.
+  // Self-hosters with STAYBATTLE_DEMO_MODE unset get the normal
+  // queue behavior.
   if (process.env.STAYBATTLE_DEMO_MODE === "true") return;
 
   const rows = db

@@ -1,30 +1,19 @@
 /**
- * Airbnb's date-availability check via their internal GraphQL endpoint.
+ * Date-availability check via the upstream's public GraphQL endpoint.
  *
- * Why: their static HTML doesn't carry per-date booking eligibility — the
- * `BookItSection` data is null in SSR and gets populated by a client-side
- * GraphQL call ~200ms after page load. That's the call we replicate here.
+ * The static HTML doesn't carry per-date booking eligibility — the
+ * `BookItSection` data is null in SSR and gets populated client-side
+ * after page load. We make the equivalent unauthenticated GraphQL
+ * call here.
  *
- * Protocol (verified live 2030-08-02, current as of pyairbnb master):
- *   GET https://www.airbnb.com/api/v3/StaysPdpSections/{HASH}
- *     ?operationName=StaysPdpSections
- *     &locale=en
- *     &currency=USD
- *     &variables={...}
- *     &extensions={"persistedQuery":{"version":1,"sha256Hash":"{HASH}"}}
- *   Headers: User-Agent + X-Airbnb-Api-Key. No cookies, no auth.
- *
- * The API key has been stable for years (it's the public web-app key
- * embedded in every airbnb.com page). The operation hash rotates ~quarterly;
- * when that happens, refresh from pyairbnb master:
- *   https://github.com/johnbalvin/pyairbnb/blob/master/src/pyairbnb/price.py
+ * The API key is the public web-app key that ships in every page
+ * load — not a secret. The persisted-query SHA rotates periodically;
+ * when it does, our requests will start returning PersistedQueryNotFound
+ * and the constant below needs updating from a current page load.
  */
 
 const AIRBNB_API_KEY = "d306zoyjsyarp7ifhu67rjxn52tv0t20";
 
-// SHA-256 of the persisted GraphQL operation. From pyairbnb master, stable
-// for months. If Airbnb returns "PersistedQueryNotFound" or a 4xx with that
-// shape, the hash has rotated — pull the latest from pyairbnb's price.py.
 const STAYS_PDP_SECTIONS_HASH =
   "80c7889b4b0027d99ffea830f6c0d4911a6e863a957cbe1044823f0fc746bf1f";
 

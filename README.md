@@ -289,7 +289,7 @@ Each user is responsible for their own use of this software with respect to Airb
 
 Terms of service for users of the live demo at app.staybattle.com are in [TOS.md](TOS.md). Privacy practices are in [PRIVACY.md](PRIVACY.md). Security policy + DMCA takedown procedure are in [SECURITY.md](SECURITY.md).
 
-If you're with Airbnb and want to talk — partnership, licensing, taking this down, anything in between — the maintainer email is in the git log.
+If you're with Airbnb and want to talk — partnership, licensing, or anything in between — the maintainer email is in the git log, and formal takedown requests go through the channel documented in [SECURITY.md](SECURITY.md).
 
 ## Contributing
 

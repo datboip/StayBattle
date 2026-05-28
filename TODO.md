@@ -49,52 +49,12 @@ Still open:
   ranking surface naturally fall in line with the organizer's
   must-haves.
 
-## Multi-source URL support — be a real aggregator
+## Multi-source URL support
 
-Right now we only accept Airbnb URLs. Airbnb's own Collaborative Wishlists
-shipped voting in 2024 but is single-platform, account-gated, and reportedly
-buggy (greyed-out vote controls; zero feature improvements across the
-'24/'25/'26 release cycles). Their own 2024 launch deck admitted only 1%
-of group bookings used shared wishlists. **their group-booking effort has stagnated.** Our
-defensible angle is being the rare cross-platform group-voting tool.
-
-Each platform sketch (rough effort estimate in `()`):
-
-- ******* `(~3h)` — Expedia-owned, big "whole house" inventory Airbnb
-  doesn't carry. JSON-LD VacationRental block is mostly there. Similar
-  scrape pipeline to what we have. No date-availability without GraphQL
-  but same disclaimer + verify-on-*** CTA pattern works.
-- ******* `(~4h)` — Strong JSON-LD presence, but
-  anti-bot is more aggressive than Airbnb. Test single requests first.
-  Vacation rentals are alongside hotels — need a filter so we don't
-  accept hotel URLs.
-- **[***](https://www.***.com/)** `(~3h)` — Actually used by the
-  maintainer (datboip), so this is the first crypto-friendly platform
-  worth wiring up. Big inventory (~3M+ properties / hotels), pays in
-  crypto + fiat, has an affiliate program, JSON-LD on listing pages.
-  Start here for the crypto-platform support since we have a real user
-  who'd use it from day one.
-- **Other crypto / Web3 rental platforms** `(~varies)` — ***,
-  ***, ***, Roam. **Friendliest legal posture of any
-  source** — most have public APIs because they're building network
-  effects, not protecting moats. Some are on-chain so the data is
-  public by design. **This is worth considering.**
-  Probably worth doing before ***.
-- **Detection** — paste a URL, sniff which platform it's from, route
-  to the right scraper. The platform shows as a small badge on the
-  card so voters know "this one's from ***, that one's from
-  ***, that one's from Airbnb."
-
-### Legal aggregator framing
-
-We're non-commercial, we link voters back to the source on every card,
-we don't store images for re-distribution (we hot-link), and we don't
-monetize. That's the same posture price-comparison aggregators
-(Kayak, Trivago, Skyscanner) have used for years. Per the research
-done in 2030-08-02, the post-`hiQ` + `Meta v. Bright Data` +
-`X Corp v. Bright Data` legal landscape protects logged-out
-personal-scale scraping of public pages. We never log in. The
-worst realistic outcome is a C&D letter + IP block, never a lawsuit.
+Today the URL parser only handles Airbnb URLs. Long-term idea: detect
+the source platform from the pasted URL and route to the matching
+scraper. No commitments on which platforms or when — this is parking-
+lot territory until there's actual demand.
 
 ## Expand reference places → "things to do" / "places of interest"
 
@@ -172,12 +132,8 @@ Still open:
 
 ## Marketing site
 
-**DONE** — live at [staybattle.com](https://staybattle.com), separate
-repo at [`datboip/staybattle-site`](https://github.com/datboip/staybattle-site),
-plain HTML (not Astro, didn't need the toolchain). Symlinks the app
-repo's `docs/screenshots/` into `/screenshots/` on the VPS so a screenshot
-regen + `git push` on the app repo automatically refreshes the marketing
-visuals on next pull. Brand book mounted at `staybattle.com/brand`.
+**DONE** — live at [staybattle.com](https://staybattle.com); brand
+book at [staybattle.com/brand](https://staybattle.com/brand).
 
 ## Back up the SQLite DB when flipping to real production
 
@@ -204,48 +160,20 @@ Enable + restore-drill instructions live in `staybattle-site/infra/DEPLOY.md`.
   box, `STAYBATTLE_DB_DIR=/tmp npm run dev`, verify schema + UI. Drill
   steps in DEPLOY.md.
 
-## Public-instance hardening (small-scale, not full SaaS)
+## Public-instance hardening
 
-**Hardening landed 2026-05-27** in case `app.staybattle.com` keeps
-seeing random visitors before we're ready to flip to a real product:
+Shipped: per-IP rate limits at nginx, operator URL takedown tool
+(`scripts/admin/remove-url.mjs`), DMCA / opt-out procedure documented
+in [SECURITY.md](SECURITY.md), and TOS / PRIVACY docs.
 
-- ~~**Per-IP rate limits at nginx**~~ — **DONE.** `limit_req_zone` for a
-  general bucket (60r/m, burst 30) plus a tighter write bucket
-  (20r/m, burst 10) layered on `/`. `$binary_remote_addr` resolves to
-  the real visitor IP via `CF-Connecting-IP` so the limits actually
-  apply to humans, not Cloudflare edges.
-- ~~**Operator URL takedown tool**~~ — **DONE.** `scripts/admin/remove-url.mjs`
-  deletes the listing (cascades votes + comments) and adds the URL to
-  `blocked_urls`. `addListing` refuses any future re-add with the
-  takedown reason.
-- ~~**DMCA / host-opt-out procedure**~~ — **DONE.** Documented in
-  `SECURITY.md` § "Takedown requests" with the email channel, the
-  required DMCA elements, the implementation tool, and the
-  per-instance vs. fork distinction.
-- ~~**Terms of service**~~ — **DONE.** `TOS.md` ships a plain-language
-  version + a formal restatement. Not lawyer-reviewed; flagged as
-  needing review before going commercial-scale.
-- ~~**Privacy policy**~~ — **DONE.** `PRIVACY.md` (see the privacy
-  audit work).
+Hardening that's only load-bearing if the project ever grows beyond
+friends-and-family use (no concrete plans):
 
-**Still open** (becomes load-bearing only if `app.staybattle.com`
-graduates from "personal demo for friends" to "people we don't know
-sign up and use it"):
-
-- **Multi-tenant** — current schema is one battle per server. A real
-  free-SaaS shape would require isolating battles per organizer
-  account, signup with email verification, and battle-discovery
-  controls. Substantial schema rework; defer until the demand exists.
-- **Signup friction** — anyone claims any name with a 4–6 digit PIN.
-  Rate-limited per name (5/min) but a botnet across IPs sidesteps it.
-  Add captcha or email verification when bot traffic shows up.
-- **Bandwidth budget** — each pasted URL is a full HTML scrape from
-  Airbnb. At scale, dedup scrapes across battles (multiple battles
-  with the same URL hit Airbnb only once).
-- **Moderation surface** — comment delete is per-author / per-organizer
-  today; an instance-operator inbox + flag/ban workflow needed for
-  public traffic.
-- **Lawyer review of TOS.md + PRIVACY.md** before anything commercial.
+- Multi-tenant schema (one-battle-per-server today).
+- Signup-friction beyond per-name rate limit (captcha / email gate).
+- Scrape dedup across battles to lower bandwidth.
+- Moderation inbox + flag/ban workflow.
+- Lawyer review of TOS / PRIVACY before any commercial use.
 
 ## Other ideas
 
@@ -253,7 +181,7 @@ sign up and use it"):
   only, rate-limited) that hits Airbnb's pricing endpoint with the trip
   dates. Caches for 24h. Helps the group sanity-check totals before voting.
 - **Side-by-side compare** — pick 2-3 finalists, show photos + amenities +
-  must-haves diff side by side. Like Trulia's compare-homes view.
+  must-haves diff side by side.
 - **Distance to a pinned place** — for each manually-pinned reference place
   on the map, compute travel time / straight-line distance to each listing.
 - **Per-voter rankings** — instead of (or alongside) the existing 1–5
@@ -275,78 +203,19 @@ sign up and use it"):
 - **Calendar export** — once a winner is picked, generate an .ics with the
   trip dates and a link to the listing.
 
-## Privacy / threat model — the doxxing question
+## Privacy / threat model
 
-When you share a StayBattle link with the crew, you're handing them
-(and anyone they forward to) a fairly detailed picture of your life:
-**where** you'll be (listing addresses + map pins), **when** (trip
-dates), **who** you're with (voter names + comments), and your
-**spending range** (price-tier listings you've considered). For a
-small private trip among real friends this is fine. The risk surface
-gets sharper when:
+Full threat-model details, what we protect against, what's still
+open, and the mitigations live in [PRIVACY.md](PRIVACY.md). That's
+the canonical doc — this entry exists so the parking-lot reader knows
+where to look.
 
-- The link leaks beyond the intended crew (friend forwards it,
-  someone screenshares, link gets crawled by a tunnel-provider's
-  index, etc.).
-- A voter's display name is their real name (most people use it).
-- The cloudflared / ngrok URL is brute-forceable (random subdomain
-  is usually safe-enough, but `*.trycloudflare.com` is a known
-  high-traffic suffix some scanners crawl).
+Open privacy work that hasn't shipped yet:
 
-### What we already do
-
-- Invite-code gate before any battle data is shown
-- scrypt-hashed PINs (server-side, never plain-text)
-- All data lives in local SQLite, no cloud upload
-- No analytics, no telemetry, no third-party JS
-- HTTP security headers (CSP, Referrer-Policy, etc.) so embedded
-  pages can't snoop
-- Photo hot-linking from Airbnb's CDN (we never store / proxy them
-  in a way that could be enumerated)
-
-### What's still soft
-
-- **Tunnel-URL discoverability** — `*.trycloudflare.com` is on
-  Cloudflare's wildcard cert which is logged in CT logs. Anyone
-  scraping CT logs can find the subdomain exists; without the invite
-  code they still can't see content. Mitigation: encourage users to
-  use named cloudflared tunnels with a custom domain instead of
-  quick tunnels for anything not throwaway.
-- **Voter names** — `"Jenny Smith"` is a much bigger leak than
-  `"Jenny"`. We don't enforce first-name-only, just suggest it.
-  Could add an opt-in "obscure my display name as 'voter-#7'" mode
-  for the paranoid.
-- **Trip dates + addresses combination** — anyone who sees the page
-  knows exactly when the house is empty. Mitigation: post-decision,
-  archive the battle to trophy case and remove the addresses (we
-  keep titles + photos but strip lat/lng + the specific URL after
-  the trip is over). Currently we preserve everything.
-- **Browser cache + history** — the URL ends up in browser history
-  + autocomplete on every voter's machine. Mitigation: shorter,
-  less-recognisable invite tokens (we already do 6-char codes;
-  could rotate per-session).
-- **The trophy case is permanent** — once a winner is archived,
-  everyone's votes/comments stay visible forever. People say things
-  in vote comments they wouldn't want preserved (jokes,
-  judgments). Mitigation: auto-redact comments older than N days
-  on archived battles; let the organizer scrub specific entries.
-- **Server logs** — Next.js + cloudflared both log full request
-  paths by default. If the tunnel URL contains the invite code as
-  a query param, it lands in logs. Make sure invite codes are NEVER
-  in the URL (currently they're a separate form submission, but
-  audit).
-
-### Next concrete actions (for the discussion)
-
-1. Add a `PRIVACY.md` documenting all of the above so self-hosters
-   know what they're shipping.
-2. Add a "share preview" UI that previews exactly what a voter will
-   see when they hit the link, before the organizer copies the URL.
-3. Add the "obscure my name" voter setting.
-4. Build a "scrub before archive" flow that nukes addresses + lat/lng
-   from the trophy case on close.
-5. Audit the cloudflared logging integration to make sure invite
-   codes / PINs never end up in access logs.
+- "Obscure my display name" voter setting (opt-in pseudonym).
+- Share-preview UI that shows the organizer what a recipient sees
+  before they copy the invite link.
+- Auto-redact / organizer-scrub for old comments on archived battles.
 
 ## Availability detection improvements
 

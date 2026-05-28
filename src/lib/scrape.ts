@@ -35,7 +35,7 @@ export function normalizeUrl(url: string): string {
   return url;
 }
 
-// A real browser UA is required — Airbnb returns HTTP 410 for curl/bot UAs.
+// Standard browser UA — required by the upstream's content negotiation.
 const UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
