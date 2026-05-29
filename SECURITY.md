@@ -31,7 +31,8 @@ If any of these don't hold for you, lock it down further before sharing the URL.
 
 If you find a security issue:
 
-- **Don't open a public GitHub issue.** Email the maintainer directly (see git log).
+- **Don't open a public GitHub issue.** Use **GitHub Private Security Advisories** instead — it's a private channel to the maintainer that doesn't expose the report until a fix lands:
+  - https://github.com/datboip/StayBattle/security/advisories/new
 - A "security issue" here means something that could affect *other* StayBattle deployments running this code — not your own self-hosted instance, which you can patch yourself.
 
 We'll triage and respond within a few days. There's no bug bounty — this is a personal project.
@@ -52,7 +53,9 @@ We'll honor takedown requests anyway. The path:
 
 If a listing you own appears on this platform and you'd like it removed:
 
-1. Email the maintainer (see `LICENSE` / git log) with:
+1. Open a **GitHub Private Security Advisory** at
+   https://github.com/datboip/StayBattle/security/advisories/new (use
+   "Takedown request" as the title) with:
    - The Airbnb (or other) URL you want removed.
    - Proof of ownership (host display name visible on the listing
      page, plus your matching account email).

@@ -4,17 +4,34 @@ import type { NextConfig } from "next";
 // image CDN, restrictive on script sources. `unsafe-inline` for style is
 // required because Tailwind 4 injects inline styles for things like aspect-ratio
 // at runtime; remove it and a chunk of styles break.
+//
+// `unsafe-eval` is required by Next's dev/HMR pipeline (Turbopack uses it for
+// hot module replacement) but is NOT needed in production builds. We keep it
+// only when NODE_ENV !== "production".
+//
+// `unsafe-inline` for scripts is still present here as a pragmatic stop-gap.
+// The proper fix is nonce-based CSP — a `next/middleware` step that mints a
+// per-request nonce and a render-time hook that attaches it to every inline
+// <script>. That's a follow-up; the current header is no worse than what
+// shipped pre-v0.4.0.
+const isProd = process.env.NODE_ENV === "production";
+
 const commonCspTail = [
   "connect-src 'self' https://nominatim.openstreetmap.org",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
+  "upgrade-insecure-requests",
 ];
+
+const scriptSrc = isProd
+  ? "script-src 'self' 'unsafe-inline'"
+  : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next dev tools need unsafe-eval; tighten in prod if you patch the build
+  scriptSrc,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.muscache.com https://*.airbnbusercontent.com https://*.tile.openstreetmap.org https://unpkg.com",
   "font-src 'self' data:",
@@ -26,6 +43,14 @@ const baseSecurityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=(), interest-cohort=()" },
+  // Two-year HSTS with subdomain coverage. Only sent in production so dev
+  // over plain http://localhost isn't permanently pinned.
+  ...(isProd
+    ? [{
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains",
+      }]
+    : []),
 ];
 
 const securityHeaders = [
