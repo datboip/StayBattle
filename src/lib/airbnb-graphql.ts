@@ -192,18 +192,18 @@ export async function checkAvailabilityGraphQL(
       signal,
     });
   } catch {
-    return { ...EMPTY_RESULT };
+    return emptyResult();
   }
 
   if (!res.ok) {
-    return { ...EMPTY_RESULT };
+    return emptyResult();
   }
 
   let json: unknown;
   try {
     json = await res.json();
   } catch {
-    return { ...EMPTY_RESULT };
+    return emptyResult();
   }
   return parseAvailabilityResponse(json);
 }
@@ -252,16 +252,30 @@ type SectionEntry = {
     | null;
 };
 
-const EMPTY_RESULT: AvailabilityResult = {
+// Frozen so callers can't accidentally mutate the shared singleton.
+// `parseAvailabilityResponse` and the fetch wrappers both used to return
+// references that mixed badly with downstream code that pushed onto
+// `.amenities` / `.photos`.
+const EMPTY_RESULT: Readonly<AvailabilityResult> = Object.freeze({
   available: false,
   reason: null,
   priceDisplay: null,
-  amenities: [],
-  amenityTitles: [],
+  amenities: [] as AmenityTag[],
+  amenityTitles: [] as string[],
   cancellationPolicy: null,
-  photos: [],
+  photos: [] as string[],
   error: true,
-};
+});
+
+/** Fresh, mutable copy of the empty result — use this instead of the singleton. */
+function emptyResult(): AvailabilityResult {
+  return {
+    ...EMPTY_RESULT,
+    amenities: [],
+    amenityTitles: [],
+    photos: [],
+  };
+}
 
 /**
  * Walk the GraphQL response down to the sections we care about and pull
@@ -283,7 +297,7 @@ export function parseAvailabilityResponse(json: unknown): AvailabilityResult {
 
     const sidebar = list.find((s) => s.sectionId === "BOOK_IT_SIDEBAR");
     const sec = sidebar?.section ?? null;
-    if (!sec) return EMPTY_RESULT;
+    if (!sec) return emptyResult();
 
     const reason = sec.localizedUnavailabilityMessage ?? null;
     const available = sec.available === true && !reason;
@@ -311,7 +325,7 @@ export function parseAvailabilityResponse(json: unknown): AvailabilityResult {
       error: false,
     };
   } catch {
-    return EMPTY_RESULT;
+    return emptyResult();
   }
 }
 
@@ -333,10 +347,10 @@ function extractPhotosFromSections(list: SectionEntry[]): string[] {
     if (!Array.isArray(containers)) return;
     for (const item of containers) {
       const url = item?.baseUrl || item?.url || item?.picture;
-      if (typeof url === "string" && url && !seen.has(url)) {
-        seen.add(url);
-        out.push(url);
-      }
+      if (typeof url !== "string" || !url || seen.has(url)) continue;
+      if (!isAirbnbCdnUrl(url)) continue;
+      seen.add(url);
+      out.push(url);
     }
   };
   const album = list.find(
@@ -348,6 +362,29 @@ function extractPhotosFromSections(list: SectionEntry[]): string[] {
   push(hero?.previewImages);
   push(hero?.mediaItems);
   return out;
+}
+
+/**
+ * Only accept URLs from Airbnb's known CDN hosts. The GraphQL response is
+ * trusted upstream BUT lands in our DB and gets rendered in `<img src>` —
+ * if the response ever contains a redirect/tracking URL (or a poisoned test
+ * fixture sneaks in attacker-controlled values), we don't want that landing
+ * in the photos column. Mirrors the muscache filter in scrape.ts.
+ */
+export function isAirbnbCdnUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+    const host = u.hostname.toLowerCase();
+    return (
+      host === "muscache.com" ||
+      host.endsWith(".muscache.com") ||
+      host === "airbnbusercontent.com" ||
+      host.endsWith(".airbnbusercontent.com")
+    );
+  } catch {
+    return false;
+  }
 }
 
 function extractAmenities(

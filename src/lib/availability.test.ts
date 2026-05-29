@@ -220,6 +220,31 @@ describe("parseAvailabilityResponse — photo extraction", () => {
     expect(parseAvailabilityResponse(json).photos).toEqual([]);
   });
 
+  it("rejects URLs from non-Airbnb hosts (defensive against response poisoning)", () => {
+    const json = envelopeWithSections([
+      {
+        sectionId: "BOOK_IT_SIDEBAR",
+        section: { available: true, localizedUnavailabilityMessage: null },
+      },
+      {
+        sectionId: "PHOTO_TOUR_SCROLLABLE_MODAL",
+        section: {
+          mediaItems: [
+            { baseUrl: "https://a0.muscache.com/im/good.jpg" },
+            { baseUrl: "https://evil.example.com/track.gif" },
+            { baseUrl: "javascript:alert(1)" },
+            { baseUrl: "https://muscache.com.attacker.test/x.jpg" },
+            { baseUrl: "https://en.airbnbusercontent.com/ok.jpg" },
+          ],
+        },
+      },
+    ]);
+    expect(parseAvailabilityResponse(json).photos).toEqual([
+      "https://a0.muscache.com/im/good.jpg",
+      "https://en.airbnbusercontent.com/ok.jpg",
+    ]);
+  });
+
   it("tolerates url/picture field variants for older shapes", () => {
     const json = envelopeWithSections([
       {
