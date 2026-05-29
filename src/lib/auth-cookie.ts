@@ -9,20 +9,20 @@ import { cookies } from "next/headers";
  * battle data regardless of who was visiting, and only a CLIENT-side
  * wrapper (`JoinGateWrapper`) hid it after hydration — meaning anyone
  * who `curl`'d the page got every voter name, invite code, comment, and
- * listing lat/lng in the response body. The audit (2026-05-27) flagged
- * this as the single biggest leak.
+ * listing lat/lng in the response body.
  *
  * Fix: `signIn` writes the voter id+name into a cookie, `page.tsx` reads
  * it server-side, and only fetches the heavy data when the cookie's
- * voter is actually a participant of the current battle.
+ * voter is actually a participant of the current battle. The cookie is
+ * also the authoritative authentication signal for every state-mutating
+ * server action (see `requireSelf` / `requireOrganizer` / `requireMember`
+ * in `src/app/actions.ts`).
  *
- * The cookie is NOT httpOnly because the client UI still reads voter
- * info for in-browser state (header, voting controls). That's the same
- * exposure surface as the existing localStorage approach. The server
- * doesn't trust the cookie value beyond using it as a key into the
- * voters/participants tables — anyone who tampers with it ends up at a
- * voter id that doesn't exist or isn't in the battle and gets gated out
- * the same as an anonymous visitor.
+ * The cookie is httpOnly: client UI doesn't need it (identity for header
+ * + voting controls lives in localStorage under `staybattle:auth:v2`,
+ * mirrored at sign-in time). Keeping the auth-bearing cookie out of
+ * `document.cookie` means XSS that steals page state can't lift the
+ * session along with it.
  */
 
 const COOKIE = "staybattle_voter";
@@ -34,11 +34,10 @@ export async function setVoterCookie(voter: CookieVoter): Promise<void> {
   const jar = await cookies();
   jar.set(COOKIE, JSON.stringify(voter), {
     maxAge: MAX_AGE,
+    httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    // Intentionally NOT httpOnly: the client UI still consults this
-    // identity. See the file comment above.
   });
 }
 

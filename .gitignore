@@ -78,3 +78,8 @@ docs/screenshots/private-*.png
 /.brand-audit-backup-*/
 /public/audit/
 *.backup
+
+# Playwright MCP session data + ad-hoc test screenshots
+/.playwright-mcp/
+/test-*.png
+/test*-*.png
