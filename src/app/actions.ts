@@ -908,6 +908,11 @@ export async function joinBattle(
   }
 
   addParticipant(battle.id, vid, name);
+  // Heal the split-brain case where a voter exists in localStorage but no
+  // HTTP cookie was ever written (e.g. carried over from before the
+  // auth-cookie migration). Without this, SSR can't read the identity, the
+  // gate stays closed, and JoinGate auto-fires this action forever.
+  await setVoterCookie({ id: vid, name });
   revalidatePath("/");
   return { ok: true };
 }
