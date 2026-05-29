@@ -54,7 +54,10 @@ export async function scrapeAirbnb(url: string): Promise<ScrapedListing> {
   });
 
   if (!res.ok) {
-    return { ...empty(airbnb_id) };
+    // Throw so the caller can show "Couldn't fetch listing — Airbnb
+    // returned 403/429/etc." instead of saving a broken row that's
+    // indistinguishable from a real listing with no JSON-LD.
+    throw new Error(`HTTP ${res.status}`);
   }
 
   const html = await res.text();

@@ -49,38 +49,65 @@ async function drain() {
             task.checkOut,
           );
         }
-      } catch {}
-      const status: AvailabilityStatus = result
-        ? graphqlResultToStatus(result)
-        : "unknown";
-      // Merge any freshly-fetched photos into the existing column. The HTML
-      // scrape at submission time gave us a seed; PHOTO_TOUR_SCROLLABLE_MODAL
-      // typically returns the full album. Union+dedupe so we never lose
-      // photos we already had, and cap at 50 to bound DB row size.
-      const mergedPhotosJson = mergePhotos(task.id, result?.photos ?? []);
-      try {
-        db.prepare(
-          `update listings
-             set availability_status = ?,
-                 availability_dates_key = ?,
-                 availability_checked_at = datetime('now'),
-                 price_display = ?,
-                 amenities = ?,
-                 cancellation_policy = ?,
-                 unavailability_reason = ?,
-                 photos = coalesce(?, photos)
-           where id = ?`,
-        ).run(
-          status,
-          datesKey(task.checkIn, task.checkOut),
-          result?.priceDisplay ?? null,
-          result ? JSON.stringify(result.amenities) : null,
-          result?.cancellationPolicy ?? null,
-          result?.reason ?? null,
-          mergedPhotosJson,
-          task.id,
+      } catch (e) {
+        // Surface to the journal — silently swallowing was masking real
+        // 4xx/5xx patterns from Airbnb and hiding bugs in the GraphQL path.
+        console.error(
+          `[availability-queue] fetch threw for listing ${task.id}:`,
+          (e as Error)?.message,
         );
-      } catch {}
+      }
+      // Split-update strategy: if the fetch succeeded with usable data,
+      // overwrite everything. If it errored (no result OR result.error),
+      // only bump status + checked_at; leave price/amenities/etc. intact
+      // so a transient network blip doesn't wipe a previously-good row.
+      const fetchOk = !!result && result.error === false;
+      try {
+        if (fetchOk) {
+          const r = result!;
+          const mergedPhotosJson = mergePhotos(task.id, r.photos);
+          db.prepare(
+            `update listings
+               set availability_status = ?,
+                   availability_dates_key = ?,
+                   availability_checked_at = datetime('now'),
+                   price_display = ?,
+                   amenities = ?,
+                   cancellation_policy = ?,
+                   unavailability_reason = ?,
+                   photos = coalesce(?, photos)
+             where id = ?`,
+          ).run(
+            graphqlResultToStatus(r),
+            datesKey(task.checkIn, task.checkOut),
+            r.priceDisplay ?? null,
+            JSON.stringify(r.amenities),
+            r.cancellationPolicy ?? null,
+            r.reason ?? null,
+            mergedPhotosJson,
+            task.id,
+          );
+        } else {
+          // Transient failure path. Bump status to "unknown" so the badge
+          // reflects "we tried and couldn't tell" without nuking price /
+          // amenities / cancellation we already had cached.
+          db.prepare(
+            `update listings
+               set availability_status = 'unknown',
+                   availability_dates_key = ?,
+                   availability_checked_at = datetime('now')
+             where id = ?`,
+          ).run(datesKey(task.checkIn, task.checkOut), task.id);
+        }
+      } catch (e) {
+        // DB write itself failed (SQLITE_BUSY, schema drift, listing
+        // deleted mid-fetch). Surface so the journal shows the row stays
+        // stale instead of silently dropping the update.
+        console.error(
+          `[availability-queue] DB write failed for listing ${task.id}:`,
+          (e as Error)?.message,
+        );
+      }
       if (state.pending.length > 0) {
         await new Promise((r) => setTimeout(r, DELAY_BETWEEN_MS));
       }
