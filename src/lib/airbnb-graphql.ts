@@ -36,6 +36,12 @@ export type AvailabilityResult = {
   amenityTitles: string[];
   /** Cancellation policy display string (e.g. "Strict", "Free cancellation"). */
   cancellationPolicy: string | null;
+  /**
+   * Full photo album from the PDP gallery — typically 30-50 URLs.
+   * Sourced from PHOTO_TOUR_SCROLLABLE_MODAL with HERO_DEFAULT as a backup.
+   * Empty array if neither section came back (older listings, missing data).
+   */
+  photos: string[];
   /** True when the request itself failed (network, 4xx, parse error). */
   error: boolean;
 };
@@ -150,6 +156,8 @@ export async function checkAvailabilityGraphQL(
         "AMENITIES_DEFAULT",
         "POLICIES_DEFAULT",
         "HIGHLIGHTS_DEFAULT",
+        "HERO_DEFAULT",
+        "PHOTO_TOUR_SCROLLABLE_MODAL",
       ],
       bypassTargetings: false,
       privateBooking: false,
@@ -221,11 +229,26 @@ type PoliciesSection = {
   cancellationPolicyForDisplay?: { title?: string | null } | string | null;
 };
 
+type MediaUrlBearer = {
+  baseUrl?: string | null;
+  url?: string | null;
+  picture?: string | null;
+};
+type PhotoSection = {
+  mediaItems?: MediaUrlBearer[] | null;
+  previewImages?: MediaUrlBearer[] | null;
+  images?: MediaUrlBearer[] | null;
+};
+
 type SectionEntry = {
   sectionId?: string;
   // Union of every section shape we read fields from.
   section?:
-    | (BookItSection & AmenitiesSection & PoliciesSection & Record<string, unknown>)
+    | (BookItSection &
+        AmenitiesSection &
+        PoliciesSection &
+        PhotoSection &
+        Record<string, unknown>)
     | null;
 };
 
@@ -236,6 +259,7 @@ const EMPTY_RESULT: AvailabilityResult = {
   amenities: [],
   amenityTitles: [],
   cancellationPolicy: null,
+  photos: [],
   error: true,
 };
 
@@ -274,6 +298,8 @@ export function parseAvailabilityResponse(json: unknown): AvailabilityResult {
       ?.section;
     const cancellationPolicy = extractCancellation(policies ?? null);
 
+    const photos = extractPhotosFromSections(list);
+
     return {
       available,
       reason,
@@ -281,11 +307,47 @@ export function parseAvailabilityResponse(json: unknown): AvailabilityResult {
       amenities,
       amenityTitles,
       cancellationPolicy,
+      photos,
       error: false,
     };
   } catch {
     return EMPTY_RESULT;
   }
+}
+
+/**
+ * Pull photo URLs from the gallery sections. PHOTO_TOUR_SCROLLABLE_MODAL is
+ * the "Show all photos" album (typically 30-50 shots); HERO_DEFAULT carries
+ * the carousel above the fold (typically the first 4-8). We take the union,
+ * dedupe, and preserve insertion order (album first, then hero).
+ *
+ * Airbnb shapes media containers under a few names — mediaItems on the
+ * modal, previewImages on the hero, occasionally images on older listings.
+ * We walk all three and accept any URL-bearing item (baseUrl preferred,
+ * then url, then picture).
+ */
+function extractPhotosFromSections(list: SectionEntry[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (containers: MediaUrlBearer[] | null | undefined) => {
+    if (!Array.isArray(containers)) return;
+    for (const item of containers) {
+      const url = item?.baseUrl || item?.url || item?.picture;
+      if (typeof url === "string" && url && !seen.has(url)) {
+        seen.add(url);
+        out.push(url);
+      }
+    }
+  };
+  const album = list.find(
+    (s) => s.sectionId === "PHOTO_TOUR_SCROLLABLE_MODAL",
+  )?.section;
+  push(album?.mediaItems);
+  push(album?.images);
+  const hero = list.find((s) => s.sectionId === "HERO_DEFAULT")?.section;
+  push(hero?.previewImages);
+  push(hero?.mediaItems);
+  return out;
 }
 
 function extractAmenities(

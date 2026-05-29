@@ -53,6 +53,11 @@ async function drain() {
       const status: AvailabilityStatus = result
         ? graphqlResultToStatus(result)
         : "unknown";
+      // Merge any freshly-fetched photos into the existing column. The HTML
+      // scrape at submission time gave us a seed; PHOTO_TOUR_SCROLLABLE_MODAL
+      // typically returns the full album. Union+dedupe so we never lose
+      // photos we already had, and cap at 50 to bound DB row size.
+      const mergedPhotosJson = mergePhotos(task.id, result?.photos ?? []);
       try {
         db.prepare(
           `update listings
@@ -62,7 +67,8 @@ async function drain() {
                  price_display = ?,
                  amenities = ?,
                  cancellation_policy = ?,
-                 unavailability_reason = ?
+                 unavailability_reason = ?,
+                 photos = coalesce(?, photos)
            where id = ?`,
         ).run(
           status,
@@ -71,6 +77,7 @@ async function drain() {
           result ? JSON.stringify(result.amenities) : null,
           result?.cancellationPolicy ?? null,
           result?.reason ?? null,
+          mergedPhotosJson,
           task.id,
         );
       } catch {}
@@ -131,6 +138,35 @@ export function queueAllListings(
     state.pending.push({ id: r.id, url: r.url, checkIn, checkOut });
   }
   void drain();
+}
+
+/**
+ * Read the listing's current photos, union with the fresh batch (existing
+ * first to preserve the carousel order users have already been seeing),
+ * dedupe, and cap. Returns the JSON string to write back, or null if the
+ * fresh batch added nothing — letting the SQL `coalesce(?, photos)` short-
+ * circuit instead of rewriting the same column with the same value.
+ */
+function mergePhotos(listingId: string, fresh: string[]): string | null {
+  if (fresh.length === 0) return null;
+  let existing: string[] = [];
+  try {
+    const row = db
+      .prepare("select photos from listings where id = ?")
+      .get(listingId) as { photos: string | null } | undefined;
+    if (row?.photos) existing = JSON.parse(row.photos) as string[];
+  } catch {}
+  const seen = new Set(existing);
+  let added = 0;
+  for (const url of fresh) {
+    if (!seen.has(url)) {
+      existing.push(url);
+      seen.add(url);
+      added++;
+    }
+  }
+  if (added === 0) return null;
+  return JSON.stringify(existing.slice(0, 50));
 }
 
 /** Enqueue a single listing — used after adding a new URL when dates are set. */

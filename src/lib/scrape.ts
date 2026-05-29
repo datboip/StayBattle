@@ -193,10 +193,10 @@ function extractPhotos(
     }
   });
 
-  // Cap at 24 — enough to cover most 4-6 bedroom listings; beyond that the
-  // carousel UI starts to be the limiting factor anyway. The deferred-state
-  // JSON in the page has more, mining that is a TODO.
-  return Array.from(set).slice(0, 24);
+  // Cap at 50 — matches the merge cap in availability-queue.ts so the
+  // seed doesn't get pre-trimmed before PHOTO_TOUR_SCROLLABLE_MODAL adds
+  // the rest of the album on the first availability check.
+  return Array.from(set).slice(0, 50);
 }
 
 function extractLocation(rental: JsonLdNode | null): string | null {

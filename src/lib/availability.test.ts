@@ -80,6 +80,7 @@ describe("graphqlResultToStatus", () => {
     amenities: [],
     amenityTitles: [],
     cancellationPolicy: null,
+    photos: [],
   };
   it("maps available → 'available'", () => {
     expect(
@@ -115,6 +116,131 @@ describe("graphqlResultToStatus", () => {
         ...empty,
       }),
     ).toBe("unknown");
+  });
+});
+
+describe("parseAvailabilityResponse — photo extraction", () => {
+  function envelopeWithSections(sections: Array<{ sectionId: string; section: Record<string, unknown> }>) {
+    return {
+      data: {
+        presentation: {
+          stayProductDetailPage: {
+            sections: { sections },
+          },
+        },
+      },
+    };
+  }
+
+  it("pulls the full album from PHOTO_TOUR_SCROLLABLE_MODAL", () => {
+    const json = envelopeWithSections([
+      {
+        sectionId: "BOOK_IT_SIDEBAR",
+        section: { available: true, localizedUnavailabilityMessage: null },
+      },
+      {
+        sectionId: "PHOTO_TOUR_SCROLLABLE_MODAL",
+        section: {
+          mediaItems: [
+            { baseUrl: "https://a0.muscache.com/im/1.jpg" },
+            { baseUrl: "https://a0.muscache.com/im/2.jpg" },
+            { baseUrl: "https://a0.muscache.com/im/3.jpg" },
+          ],
+        },
+      },
+    ]);
+    expect(parseAvailabilityResponse(json).photos).toEqual([
+      "https://a0.muscache.com/im/1.jpg",
+      "https://a0.muscache.com/im/2.jpg",
+      "https://a0.muscache.com/im/3.jpg",
+    ]);
+  });
+
+  it("falls back to HERO_DEFAULT.previewImages when the modal is absent", () => {
+    const json = envelopeWithSections([
+      {
+        sectionId: "BOOK_IT_SIDEBAR",
+        section: { available: true, localizedUnavailabilityMessage: null },
+      },
+      {
+        sectionId: "HERO_DEFAULT",
+        section: {
+          previewImages: [
+            { baseUrl: "https://a0.muscache.com/im/hero1.jpg" },
+            { baseUrl: "https://a0.muscache.com/im/hero2.jpg" },
+          ],
+        },
+      },
+    ]);
+    expect(parseAvailabilityResponse(json).photos).toEqual([
+      "https://a0.muscache.com/im/hero1.jpg",
+      "https://a0.muscache.com/im/hero2.jpg",
+    ]);
+  });
+
+  it("dedupes across modal + hero and keeps modal order first", () => {
+    const json = envelopeWithSections([
+      {
+        sectionId: "BOOK_IT_SIDEBAR",
+        section: { available: true, localizedUnavailabilityMessage: null },
+      },
+      {
+        sectionId: "PHOTO_TOUR_SCROLLABLE_MODAL",
+        section: {
+          mediaItems: [
+            { baseUrl: "https://a0.muscache.com/im/1.jpg" },
+            { baseUrl: "https://a0.muscache.com/im/2.jpg" },
+          ],
+        },
+      },
+      {
+        sectionId: "HERO_DEFAULT",
+        section: {
+          previewImages: [
+            { baseUrl: "https://a0.muscache.com/im/1.jpg" }, // dupe
+            { baseUrl: "https://a0.muscache.com/im/hero-only.jpg" },
+          ],
+        },
+      },
+    ]);
+    expect(parseAvailabilityResponse(json).photos).toEqual([
+      "https://a0.muscache.com/im/1.jpg",
+      "https://a0.muscache.com/im/2.jpg",
+      "https://a0.muscache.com/im/hero-only.jpg",
+    ]);
+  });
+
+  it("returns empty photos when neither section is present", () => {
+    const json = envelopeWithSections([
+      {
+        sectionId: "BOOK_IT_SIDEBAR",
+        section: { available: true, localizedUnavailabilityMessage: null },
+      },
+    ]);
+    expect(parseAvailabilityResponse(json).photos).toEqual([]);
+  });
+
+  it("tolerates url/picture field variants for older shapes", () => {
+    const json = envelopeWithSections([
+      {
+        sectionId: "BOOK_IT_SIDEBAR",
+        section: { available: true, localizedUnavailabilityMessage: null },
+      },
+      {
+        sectionId: "PHOTO_TOUR_SCROLLABLE_MODAL",
+        section: {
+          mediaItems: [
+            { url: "https://a0.muscache.com/im/url-style.jpg" },
+            { picture: "https://a0.muscache.com/im/picture-style.jpg" },
+            { baseUrl: null, url: null }, // garbage
+          ],
+        },
+      },
+    ]);
+    expect(parseAvailabilityResponse(json).photos).toEqual([
+      "https://a0.muscache.com/im/url-style.jpg",
+      "https://a0.muscache.com/im/picture-style.jpg",
+    ]);
   });
 });
 
