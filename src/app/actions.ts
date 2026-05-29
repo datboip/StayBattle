@@ -44,6 +44,8 @@ import { normalizePlaceName, mergeContributor } from "@/lib/place-dedup";
 import {
   setVoterCookie,
   clearVoterCookie,
+  readVoterCookie,
+  type CookieVoter,
 } from "@/lib/auth-cookie";
 import {
   parseRequirements,
@@ -55,6 +57,66 @@ export type ActionResult = { ok: true } | { ok: false; error: string };
 export type SignInResult =
   | { ok: true; id: string; name: string; created: boolean }
   | { ok: false; error: string };
+
+/**
+ * Authorization helpers. The cookie is the SERVER's source of truth for
+ * who's calling; the client-supplied voterId is a UX convenience for
+ * error messages and a sanity check, NOT an authentication signal.
+ *
+ * Before these existed, every action trusted the client-supplied
+ * `voterId` arg verbatim — IDOR across the entire surface. Any
+ * authenticated member could pass another participant's UUID (or the
+ * organizer's UUID, broadcast in the battle payload) and act as them.
+ *
+ * Every state-mutating action now derives identity from
+ * `readVoterCookie()` and ignores the body parameter for auth purposes.
+ */
+async function requireSelf(
+  claimedVid: string,
+): Promise<{ ok: true; voter: CookieVoter } | { ok: false; error: string }> {
+  const voter = await readVoterCookie();
+  if (!voter) return { ok: false, error: "Sign in first" };
+  // Hard-fail if the client thinks they're someone else than the cookie
+  // says — surfaces stale-session bugs instead of silently mis-attributing
+  // an action.
+  if (claimedVid && voter.id !== claimedVid) {
+    return { ok: false, error: "Sign in mismatch — please sign in again" };
+  }
+  return { ok: true, voter };
+}
+
+async function requireOrganizer(): Promise<
+  | { ok: true; voter: CookieVoter; battle: Battle }
+  | { ok: false; error: string }
+> {
+  const voter = await readVoterCookie();
+  if (!voter) return { ok: false, error: "Sign in first" };
+  const battle = getCurrentBattle();
+  if (!battle) return { ok: false, error: "No active battle" };
+  if (voter.id !== battle.organizer_id) {
+    return { ok: false, error: "Organizer only" };
+  }
+  return { ok: true, voter, battle };
+}
+
+/**
+ * Authenticated and a participant of the current battle. For
+ * collaborative actions (drop a pin, recheck availability, etc.) where
+ * any crew member should be able to act but a stranger shouldn't.
+ */
+async function requireMember(): Promise<
+  | { ok: true; voter: CookieVoter; battle: Battle }
+  | { ok: false; error: string }
+> {
+  const voter = await readVoterCookie();
+  if (!voter) return { ok: false, error: "Sign in first" };
+  const battle = getCurrentBattle();
+  if (!battle) return { ok: false, error: "No active battle" };
+  if (!isParticipant(battle.id, voter.id)) {
+    return { ok: false, error: "You're not in this battle." };
+  }
+  return { ok: true, voter, battle };
+}
 
 /**
  * Sign in or register. If the name doesn't exist, create a new voter with the
@@ -120,16 +182,11 @@ export async function signOut(): Promise<ActionResult> {
  * client posting junk can't poison the settings row.
  */
 export async function setBattleRequirements(
-  organizerId: string,
+  _organizerId: string,
   tags: string[],
 ): Promise<ActionResult> {
-  const oid = cleanString(organizerId, VOTER_ID_MAX);
-  if (!oid) return { ok: false, error: "Missing organizer id" };
-  const battle = getCurrentBattle();
-  if (!battle) return { ok: false, error: "No active battle" };
-  if (battle.organizer_id !== oid) {
-    return { ok: false, error: "Only the organizer can edit requirements" };
-  }
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
   if (!Array.isArray(tags)) {
     return { ok: false, error: "Invalid requirements" };
   }
@@ -157,8 +214,10 @@ export async function addListing(
   addedByName: string,
   addedById: string = "",
 ): Promise<ActionResult> {
-  const name = cleanString(addedByName, NAME_MAX);
-  const voterId = cleanString(addedById, VOTER_ID_MAX);
+  const auth = await requireSelf(cleanString(addedById, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const voterId = auth.voter.id;
+  const name = cleanString(addedByName, NAME_MAX) || auth.voter.name;
   const rawUrl = cleanString(urlInput, URL_MAX);
   if (!rawUrl) return { ok: false, error: "URL is required" };
 
@@ -168,7 +227,7 @@ export async function addListing(
     return { ok: false, error: "Submissions closed — the battle has started." };
   }
   // Must be a participant of the active battle.
-  if (battle && voterId && !isParticipant(battle.id, voterId)) {
+  if (battle && !isParticipant(battle.id, voterId)) {
     return { ok: false, error: "You're not in this battle." };
   }
 
@@ -269,9 +328,11 @@ export async function castVote(
   voterName: string,
   value: 0 | 1 | 2 | 3 | 4 | 5,
 ): Promise<ActionResult> {
+  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const vid = auth.voter.id;
   const id = cleanString(listingId, 64);
-  const vid = cleanString(voterId, VOTER_ID_MAX);
-  if (!id || !vid) return { ok: false, error: "Missing id" };
+  if (!id) return { ok: false, error: "Missing id" };
   if (!Number.isInteger(value) || value < 0 || value > 5) {
     return { ok: false, error: "Invalid vote" };
   }
@@ -288,7 +349,7 @@ export async function castVote(
     return { ok: false, error: "Can't rate your own listing" };
   }
 
-  const name = cleanString(voterName, NAME_MAX) || "anon";
+  const name = cleanString(voterName, NAME_MAX) || auth.voter.name;
 
   if (value === 0) {
     db.prepare(
@@ -315,15 +376,17 @@ export async function addComment(
   body: string,
   parentId: string = "",
 ): Promise<ActionResult> {
+  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const vid = auth.voter.id;
   const id = cleanString(listingId, 64);
-  const vid = cleanString(voterId, VOTER_ID_MAX);
   const pid = cleanString(parentId, 64);
   const text = cleanString(body, COMMENT_MAX);
-  if (!id || !vid) return { ok: false, error: "Missing id" };
+  if (!id) return { ok: false, error: "Missing id" };
   if (!text) return { ok: false, error: "Empty comment" };
   if (!consume(`comment:${vid}`, LIMITS.comment)) return RATE_LIMITED;
 
-  const name = cleanString(voterName, NAME_MAX) || "anon";
+  const name = cleanString(voterName, NAME_MAX) || auth.voter.name;
 
   // If a parent is given, sanity check that it belongs to the same listing
   // and isn't itself a reply (keep nesting flat at one level).
@@ -354,9 +417,11 @@ export async function deleteComment(
   commentId: string,
   voterId: string,
 ): Promise<ActionResult> {
+  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const vid = auth.voter.id;
   const id = cleanString(commentId, 64);
-  const vid = cleanString(voterId, VOTER_ID_MAX);
-  if (!id || !vid) return { ok: false, error: "Missing id" };
+  if (!id) return { ok: false, error: "Missing id" };
 
   // You can delete your own comments. Organizer can delete anyone's.
   const row = db
@@ -380,22 +445,30 @@ export async function removeListing(
   listingId: string,
   voterId: string = "",
 ): Promise<ActionResult> {
+  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const vid = auth.voter.id;
   const id = cleanString(listingId, 64);
-  const vid = cleanString(voterId, VOTER_ID_MAX);
   if (!id) return { ok: false, error: "Missing id" };
   if (!consume(`remove:${id}`, LIMITS.remove)) return RATE_LIMITED;
 
   // During submission, you can only remove your own submissions.
-  // During voting/closed, the organizer (or anyone) can eliminate.
+  // During voting/closed, the organizer eliminates losers (anyone-can-
+  // eliminate would let one voter nuke the whole roster).
   const battle = getCurrentBattle();
   const row = db
     .prepare("select added_by_id from listings where id = ?")
     .get(id) as { added_by_id: string | null } | undefined;
+  if (!row) return { ok: false, error: "Listing not found" };
 
   if (battle && battle.phase === "submission") {
-    if (!row) return { ok: false, error: "Listing not found" };
-    if (!vid || row.added_by_id !== vid) {
+    if (row.added_by_id !== vid) {
       return { ok: false, error: "You can only remove your own submissions during submission phase." };
+    }
+  } else if (battle) {
+    // Voting/closed phase — organizer only.
+    if (battle.organizer_id !== vid) {
+      return { ok: false, error: "Only the organizer can eliminate listings during voting." };
     }
   }
 
@@ -408,6 +481,17 @@ export async function addPlace(
   query: string,
   addedByName: string,
 ): Promise<ActionResult> {
+  // Pre-battle (BattleSetup) the map is also usable; before a battle exists
+  // there's no membership to check, so just require auth. Inside a battle,
+  // require the caller is a member.
+  const cur = getCurrentBattle();
+  if (cur) {
+    const auth = await requireMember();
+    if (!auth.ok) return auth;
+  } else {
+    const voter = await readVoterCookie();
+    if (!voter) return { ok: false, error: "Sign in first" };
+  }
   const q = cleanString(query, PLACE_QUERY_MAX);
   if (!q) return { ok: false, error: "Type a place to find" };
   const name = cleanString(addedByName, NAME_MAX);
@@ -522,6 +606,14 @@ export async function addPlaceAtCoords(
   addedByName: string,
   kind: string = "other",
 ): Promise<ActionResult> {
+  const cur = getCurrentBattle();
+  if (cur) {
+    const auth = await requireMember();
+    if (!auth.ok) return auth;
+  } else {
+    const voter = await readVoterCookie();
+    if (!voter) return { ok: false, error: "Sign in first" };
+  }
   const cleanName = cleanString(name, 120);
   if (!cleanName) return { ok: false, error: "Place needs a name" };
   if (
@@ -648,6 +740,14 @@ function mergeSameNameNearby({
 }
 
 export async function removePlace(placeId: string): Promise<ActionResult> {
+  const cur = getCurrentBattle();
+  if (cur) {
+    const auth = await requireMember();
+    if (!auth.ok) return auth;
+  } else {
+    const voter = await readVoterCookie();
+    if (!voter) return { ok: false, error: "Sign in first" };
+  }
   const id = cleanString(placeId, 64);
   if (!id) return { ok: false, error: "Missing id" };
   if (!consume(`remove-place:${id}`, LIMITS.remove)) return RATE_LIMITED;
@@ -660,6 +760,16 @@ export async function setTripDates(
   checkIn: string,
   checkOut: string,
 ): Promise<ActionResult> {
+  // Pre-battle the user is still setting things up so any authed user can
+  // set/clear dates. Once a battle exists, only the organizer can move them.
+  const cur = getCurrentBattle();
+  if (cur) {
+    const auth = await requireOrganizer();
+    if (!auth.ok) return auth;
+  } else {
+    const voter = await readVoterCookie();
+    if (!voter) return { ok: false, error: "Sign in first" };
+  }
   const ci = cleanString(checkIn, 10);
   const co = cleanString(checkOut, 10);
   if (ci && !isValidIsoDate(ci)) return { ok: false, error: "Bad check-in date" };
@@ -684,23 +794,19 @@ export async function setTripDates(
 
 export async function overrideAvailability(
   listingId: string,
-  organizerId: string,
+  _organizerId: string,
   reason: string,
   status: "available" | "unavailable" = "available",
 ): Promise<ActionResult> {
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
+  const { battle } = auth;
   const id = cleanString(listingId, 64);
-  const oid = cleanString(organizerId, VOTER_ID_MAX);
   const why = cleanString(reason, 500);
   if (!id) return { ok: false, error: "Missing id" };
   if (!why) return { ok: false, error: "Add a reason so the crew knows why" };
   if (status !== "available" && status !== "unavailable") {
     return { ok: false, error: "Bad override status" };
-  }
-
-  const battle = getCurrentBattle();
-  if (!battle) return { ok: false, error: "No active battle" };
-  if (oid !== battle.organizer_id) {
-    return { ok: false, error: "Only the organizer can override availability" };
   }
 
   const row = db
@@ -722,17 +828,12 @@ export async function overrideAvailability(
 
 export async function clearAvailabilityOverride(
   listingId: string,
-  organizerId: string,
+  _organizerId: string,
 ): Promise<ActionResult> {
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
   const id = cleanString(listingId, 64);
-  const oid = cleanString(organizerId, VOTER_ID_MAX);
   if (!id) return { ok: false, error: "Missing id" };
-
-  const battle = getCurrentBattle();
-  if (!battle) return { ok: false, error: "No active battle" };
-  if (oid !== battle.organizer_id) {
-    return { ok: false, error: "Only the organizer can clear an override" };
-  }
 
   db.prepare(
     `update listings
@@ -750,6 +851,15 @@ export async function refreshAvailability(
   listingId?: string,
   force = false,
 ): Promise<ActionResult> {
+  // Force-recheck (queueAll force=true) is expensive — only the organizer.
+  // Single-listing recheck (listingId given) is cheap, any member can fire.
+  if (force || !listingId) {
+    const auth = await requireOrganizer();
+    if (!auth.ok) return auth;
+  } else {
+    const auth = await requireMember();
+    if (!auth.ok) return auth;
+  }
   const dates = getTripDates();
   if (!dates.checkIn || !dates.checkOut) {
     return { ok: false, error: "Set trip dates first" };
@@ -781,15 +891,22 @@ export async function createBattle(input: {
   checkOut: string;
   submissionDeadline: string; // ISO datetime, must be in the future
 }): Promise<BattleResult> {
+  // No existing battle → anyone who's signed in can create one.
+  // If a battle already exists, createBattle should never have been called.
+  const existing = getCurrentBattle();
+  if (existing) {
+    return { ok: false, error: "A battle is already running — reset it first" };
+  }
+  const auth = await requireSelf(cleanString(input.organizerId, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const organizerId = auth.voter.id;
   const name = cleanString(input.name, 80);
-  const organizerId = cleanString(input.organizerId, VOTER_ID_MAX);
-  const organizerName = cleanString(input.organizerName, NAME_MAX);
+  const organizerName = cleanString(input.organizerName, NAME_MAX) || auth.voter.name;
   const checkIn = cleanString(input.checkIn, 10);
   const checkOut = cleanString(input.checkOut, 10);
   const deadline = cleanString(input.submissionDeadline, 40);
 
   if (!name) return { ok: false, error: "Name the battle" };
-  if (!organizerId) return { ok: false, error: "Sign in first" };
   if (!checkIn || !isValidIsoDate(checkIn)) return { ok: false, error: "Bad check-in date" };
   if (!checkOut || !isValidIsoDate(checkOut)) return { ok: false, error: "Bad check-out date" };
   if (new Date(checkIn) >= new Date(checkOut)) {
@@ -825,12 +942,9 @@ export async function createBattle(input: {
   return { ok: true, battle };
 }
 
-export async function startBattleNow(organizerId: string): Promise<BattleResult> {
-  const current = getCurrentBattle();
-  if (!current) return { ok: false, error: "No battle yet" };
-  if (cleanString(organizerId, VOTER_ID_MAX) !== current.organizer_id) {
-    return { ok: false, error: "Only the organizer can start the battle" };
-  }
+export async function startBattleNow(_organizerId: string): Promise<BattleResult> {
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
   const battle = updateBattlePhase("voting");
   if (!battle) return { ok: false, error: "Couldn't start battle" };
 
@@ -850,11 +964,8 @@ export async function updateBattle(input: {
   checkIn?: string;
   checkOut?: string;
 }): Promise<BattleResult> {
-  const current = getCurrentBattle();
-  if (!current) return { ok: false, error: "No battle yet" };
-  if (cleanString(input.organizerId, VOTER_ID_MAX) !== current.organizer_id) {
-    return { ok: false, error: "Only the organizer can edit the battle" };
-  }
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
   const patch: Partial<Battle> = {};
   if (input.name !== undefined) {
     const v = cleanString(input.name, 80);
@@ -890,19 +1001,30 @@ export async function joinBattle(
   voterId: string,
   voterName: string,
 ): Promise<ActionResult> {
+  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const vid = auth.voter.id;
+  const name = cleanString(voterName, NAME_MAX) || auth.voter.name;
   const code = normalizeInviteCode(cleanString(rawCode, 32));
-  const vid = cleanString(voterId, VOTER_ID_MAX);
-  const name = cleanString(voterName, NAME_MAX) || "anon";
   if (!code) return { ok: false, error: "Enter the invite code" };
-  if (!vid) return { ok: false, error: "Sign in first" };
-
-  // Rate-limit per voter so brute-forcing the 6-char code is impractical.
-  if (!consume(`join:${vid}`, LIMITS.signIn)) {
-    return { ok: false, error: "Too many attempts. Wait a moment and try again." };
-  }
 
   const battle = getCurrentBattle();
   if (!battle) return { ok: false, error: "No active battle" };
+
+  // Two-layer brute-force guard:
+  //   1. Per-voter throttle so a single signed-in user can't grind codes.
+  //   2. Per-battle ceiling so a swarm of newly-created accounts can't
+  //      brute the 6-char code by rotating identities. The code space is
+  //      ~32^6 ≈ 1B with the curated alphabet; capping total attempts on
+  //      the active battle keeps that meaningful even under coordinated
+  //      attack.
+  if (!consume(`join:voter:${vid}`, LIMITS.signIn)) {
+    return { ok: false, error: "Too many attempts. Wait a moment and try again." };
+  }
+  if (!consume(`join:battle:${battle.id}`, LIMITS.joinBattle)) {
+    return { ok: false, error: "Too many join attempts on this battle — try again in a minute." };
+  }
+
   if (code !== battle.invite_code) {
     return { ok: false, error: "That code doesn't match. Ask the organizer." };
   }
@@ -918,8 +1040,9 @@ export async function joinBattle(
 }
 
 export async function leaveBattle(voterId: string): Promise<ActionResult> {
-  const vid = cleanString(voterId, VOTER_ID_MAX);
-  if (!vid) return { ok: false, error: "Missing id" };
+  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  if (!auth.ok) return auth;
+  const vid = auth.voter.id;
   const battle = getCurrentBattle();
   if (!battle) return { ok: false, error: "No active battle" };
   if (vid === battle.organizer_id) {
@@ -931,13 +1054,10 @@ export async function leaveBattle(voterId: string): Promise<ActionResult> {
 }
 
 export async function regenerateInviteCode(
-  organizerId: string,
+  _organizerId: string,
 ): Promise<BattleResult> {
-  const battle = getCurrentBattle();
-  if (!battle) return { ok: false, error: "No active battle" };
-  if (cleanString(organizerId, VOTER_ID_MAX) !== battle.organizer_id) {
-    return { ok: false, error: "Only the organizer can regenerate the code" };
-  }
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
   const next = writeRegenerateInviteCode();
   if (!next) return { ok: false, error: "Couldn't regenerate" };
   revalidatePath("/");
@@ -945,15 +1065,13 @@ export async function regenerateInviteCode(
 }
 
 export async function kickParticipant(
-  organizerId: string,
+  _organizerId: string,
   participantVoterId: string,
   removeVotes = false,
 ): Promise<ActionResult> {
-  const battle = getCurrentBattle();
-  if (!battle) return { ok: false, error: "No active battle" };
-  if (cleanString(organizerId, VOTER_ID_MAX) !== battle.organizer_id) {
-    return { ok: false, error: "Only the organizer can kick" };
-  }
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
+  const { battle } = auth;
   const target = cleanString(participantVoterId, VOTER_ID_MAX);
   if (!target) return { ok: false, error: "Missing voter" };
   if (target === battle.organizer_id) {
@@ -968,12 +1086,10 @@ export async function kickParticipant(
  * Tear down the entire battle (also clears listings, votes, comments).
  * Only the organizer can do this. Use for "start a new trip" flows.
  */
-export async function resetBattle(organizerId: string): Promise<ActionResult> {
-  const current = getCurrentBattle();
-  if (!current) return { ok: false, error: "No battle yet" };
-  if (cleanString(organizerId, VOTER_ID_MAX) !== current.organizer_id) {
-    return { ok: false, error: "Only the organizer can reset" };
-  }
+export async function resetBattle(_organizerId: string): Promise<ActionResult> {
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
+  const current = auth.battle;
   // Cascade-deletes votes + comments via FK on listings.
   db.prepare("delete from listings").run();
   db.prepare("delete from places").run();
@@ -988,12 +1104,10 @@ export async function resetBattle(organizerId: string): Promise<ActionResult> {
  * Archive the current battle (snapshot winners/scores into past_battles), then
  * wipe the active battle so a new one can start. Organizer-only.
  */
-export async function closeBattle(organizerId: string): Promise<ActionResult> {
-  const current = getCurrentBattle();
-  if (!current) return { ok: false, error: "No battle yet" };
-  if (cleanString(organizerId, VOTER_ID_MAX) !== current.organizer_id) {
-    return { ok: false, error: "Only the organizer can close the battle" };
-  }
+export async function closeBattle(_organizerId: string): Promise<ActionResult> {
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
+  const current = auth.battle;
   archiveCurrentBattle({
     id: current.id,
     name: current.name,
@@ -1012,19 +1126,18 @@ export async function closeBattle(organizerId: string): Promise<ActionResult> {
 }
 
 export async function deletePastBattle(
-  organizerOrCurrentVoterId: string,
+  _organizerOrCurrentVoterId: string,
   pastBattleId: string,
 ): Promise<ActionResult> {
-  // Anyone signed in can delete a past battle from the trophy case for now
-  // (since past battles are read-only and we don't enforce role beyond
-  // "is the current organizer if a battle is active"). Tighten later.
-  const vid = cleanString(organizerOrCurrentVoterId, VOTER_ID_MAX);
+  // Past-battle pruning requires an active battle so we have an organizer
+  // to authorize against. Previously when no active battle existed the
+  // check skipped entirely — any signed-in voter could wipe trophy rows.
+  // The trade-off: between battles, you can't prune. That's acceptable —
+  // start a new battle (you become its organizer), then prune from there.
+  const auth = await requireOrganizer();
+  if (!auth.ok) return auth;
   const id = cleanString(pastBattleId, 64);
-  if (!vid || !id) return { ok: false, error: "Missing id" };
-  const cur = getCurrentBattle();
-  if (cur && vid !== cur.organizer_id) {
-    return { ok: false, error: "Only the current organizer can prune past battles" };
-  }
+  if (!id) return { ok: false, error: "Missing id" };
   removePastBattle(id);
   revalidatePath("/");
   return { ok: true };

@@ -23,6 +23,11 @@ export const LIMITS = {
   place: { capacity: 8, refillPerSecond: 8 / 60 },
   remove: { capacity: 30, refillPerSecond: 30 / 60 },
   signIn: { capacity: 5, refillPerSecond: 5 / 60 }, // 5 PIN attempts per minute per name
+  // Per-battle ceiling for join attempts. Layered on top of the per-voter
+  // signIn limit so an attacker rotating identities still can't brute the
+  // invite code — at 20 capacity + 1/min refill, even a swarm gets ~20
+  // tries before being throttled to a trickle.
+  joinBattle: { capacity: 20, refillPerSecond: 1 / 60 },
 } as const satisfies Record<string, Limit>;
 
 export type LimitName = keyof typeof LIMITS;
