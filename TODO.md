@@ -148,7 +148,7 @@ book at [staybattle.com/brand](https://staybattle.com/brand).
 
 Enable + restore-drill instructions live in `staybattle-site/infra/DEPLOY.md`.
 
-**Still open (do BEFORE flipping `STAYBATTLE_DEMO_MODE=false`):**
+**Still open** — both parked, *not* gating the public-repo flip:
 
 - **Off-box destination** — same-box backups don't survive disk failure.
   Pick one and wire it into `backup-db.sh` after the snapshot line
@@ -159,6 +159,11 @@ Enable + restore-drill instructions live in `staybattle-site/infra/DEPLOY.md`.
 - **Quarterly restore drill** — pull the latest snapshot to a scratch
   box, `STAYBATTLE_DB_DIR=/tmp npm run dev`, verify schema + UI. Drill
   steps in DEPLOY.md.
+
+Risk if both stay open: a disk-failure event on the VPS loses everything
+between the last snapshot and the crash. Acceptable for a side project
+with no real users; revisit when an actual stranger is running their
+own crew on this codebase and pings asking about backups.
 
 ## Public-instance hardening
 
