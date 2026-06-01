@@ -3,6 +3,16 @@ name: Build and publish Docker image
 on:
   push:
     branches: [main]
+    # Skip doc-only / config-only pushes — image content doesn't change so
+    # there's no point burning 20+ min of multi-arch Docker build time.
+    # Tag pushes ALWAYS trigger regardless of paths (cuts a real release).
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - ".gitignore"
     tags: ["v*"]
   workflow_dispatch:
 
