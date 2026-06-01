@@ -94,6 +94,12 @@ const allowedDevOrigins = [
 ];
 
 const nextConfig: NextConfig = {
+  // Strip the `X-Powered-By: Next.js` header from every response. Pure
+  // fingerprinting freebie otherwise — anyone scanning the internet for
+  // Next deployments to target with a Next-specific exploit gets a "yep,
+  // this one" answer for free. Modern Next omits it by default in some
+  // versions; making it explicit keeps the protection across upgrades.
+  poweredByHeader: false,
   allowedDevOrigins,
   images: {
     remotePatterns: [
