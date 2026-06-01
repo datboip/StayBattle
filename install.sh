@@ -34,7 +34,7 @@
 set -e
 
 REPO="datboip/StayBattle"
-# Pin to a specific release with: STAYBATTLE_TAG=v0.4.0 sh install.sh
+# Pin to a specific release with: STAYBATTLE_TAG=v0.4.1 sh install.sh
 # Defaults to :latest, which tracks main and may move under you.
 TAG="${STAYBATTLE_TAG:-latest}"
 IMAGE="ghcr.io/${REPO}:${TAG}"
