@@ -57,13 +57,14 @@ export function NameGate({ children }: { children: React.ReactNode }) {
 
             <div className="rounded-sm border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs leading-relaxed text-zinc-300">
               <p>
-                <strong className="text-cyan-200">Lucky you</strong> — someone
-                in your crew is planning a vacation and you&apos;re helping
-                pick the place. Everyone drops their favorite Airbnbs in the
-                ring, you all vote, the best one wins.
+                Pick a name and PIN to get started. From here you&apos;ll
+                either <strong className="text-cyan-200">start a new battle</strong>{" "}
+                or <strong className="text-cyan-200">join one</strong> your
+                crew already made.
               </p>
               <p className="mt-1 text-zinc-400">
-                Sign in below to get started. Takes 10 seconds.
+                Everyone drops their favorite Airbnbs in the ring, you all
+                vote, the best one wins. Takes 10 seconds to sign in.
               </p>
             </div>
 

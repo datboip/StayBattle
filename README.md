@@ -19,6 +19,10 @@ Pit Airbnb listings against each other. Rate, argue in the comments, settle it o
 
 ---
 
+**StayBattle is a self-hosted, open-source web app where your group drops Airbnb URLs into one place and votes on the winner together.** No accounts, no SaaS, no tracking. You run it on your own box for your own crew.
+
+---
+
 ## 🌐 Try the live demo
 
 A public demo runs at **<https://app.staybattle.com>** with pre-seeded
@@ -46,33 +50,40 @@ set must-haves). Everyone else is a regular voter.
 
 ## 60-second install
 
-> ### ⚠️ Before you run anything from this README — read it
->
-> This applies to *any* project you find online, not just this one. The commands below pull and run other people's code on your machine.
->
-> - **Read [`install.sh`](install.sh) line-by-line.** It's 130 lines, no obfuscation. You should be able to tell exactly what it does in under two minutes. If you can't, don't run it.
-> - **Pin a release tag**, not `main`. URLs that say `…/main/install.sh` get whatever's there *right now* — including whatever an attacker might push if the repo gets compromised. Use a tagged version once we ship releases.
-> - **Read [`docker-compose.yml`](docker-compose.yml) and [`Dockerfile`](Dockerfile)** before docker-compose-up. Both are short.
-> - **`npm install` is not safe-by-default.** The npm ecosystem has had real supply-chain attacks for years and they keep happening, including in the last few weeks:
->   - **[axios (April 2026)](https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/)** — a package with ~50M weekly downloads, compromised.
->   - **[TanStack packages](https://snyk.io/blog/tanstack-npm-packages-compromised/)** — the React-ecosystem family (Query, Router, Table) used by huge swaths of frontends.
->   - Older but instructive: `event-stream` (2018), `ua-parser-js` (2021), `node-ipc` (2022), `lottie-player` (2024), plus a steady drip of typosquats.
->
->   Some basics that protect you:
->   - **Use `npm ci`, not `npm install`** in production. `ci` reads `package-lock.json` exactly and refuses to install anything not pinned. `npm install` will happily update versions on you.
->   - **`npm audit`** after install to flag known CVEs. Not exhaustive, but catches the obvious stuff.
->   - **`npm install --ignore-scripts`** skips `postinstall` scripts — that's the main vector for arbitrary code execution at install time. Some packages legitimately need them; if you're paranoid, install with the flag and selectively re-enable scripts for packages you trust.
->   - **Avoid `npm install -g`** unless you really need a global binary. Globals install with broader permissions and stick around forever.
->   - **Be skeptical of brand-new versions** of dependencies you didn't update on purpose. Compromised maintainer accounts publish malicious versions of legit packages. If something updated 2 days ago and now wants to run a postinstall, look at it first.
-> - **Same goes for `.env` files and any "paste this command" instruction** anywhere in this repo. If something says "run X", check what X is.
->
-> StayBattle is open source under AGPL v3, so you can audit everything. That only helps if you actually look.
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/datboip/StayBattle/main/install.sh | sh
 ```
 
 That's it. Opens at <http://localhost:3000> **on the machine you ran the install on**. Data lives in `~/staybattle/data`.
+
+> ⚠️ **Pin a release tag**, don't track `main`. The one-liner above grabs whatever's on `main` right now. To pin a known-good version:
+> ```bash
+> STAYBATTLE_TAG=v0.4.0 sh <(curl -fsSL https://raw.githubusercontent.com/datboip/StayBattle/v0.4.0/install.sh)
+> ```
+
+<details>
+<summary><strong>📖 Before you curl | sh anything (this or any other project) — click to expand</strong></summary>
+
+This applies to *any* project you find online, not just this one. The command above pulls and runs other people's code on your machine.
+
+- **Read [`install.sh`](install.sh) line-by-line.** It's 130 lines, no obfuscation. You should be able to tell exactly what it does in under two minutes. If you can't, don't run it.
+- **Read [`docker-compose.yml`](docker-compose.yml) and [`Dockerfile`](Dockerfile)** before docker-compose-up. Both are short.
+- **`npm install` is not safe-by-default.** The npm ecosystem has had real supply-chain attacks for years and they keep happening, including in the last few weeks:
+  - **[axios (April 2026)](https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/)** — a package with ~50M weekly downloads, compromised.
+  - **[TanStack packages](https://snyk.io/blog/tanstack-npm-packages-compromised/)** — the React-ecosystem family (Query, Router, Table) used by huge swaths of frontends.
+  - Older but instructive: `event-stream` (2018), `ua-parser-js` (2021), `node-ipc` (2022), `lottie-player` (2024), plus a steady drip of typosquats.
+
+  Some basics that protect you:
+  - **Use `npm ci`, not `npm install`** in production. `ci` reads `package-lock.json` exactly and refuses to install anything not pinned. `npm install` will happily update versions on you.
+  - **`npm audit`** after install to flag known CVEs. Not exhaustive, but catches the obvious stuff.
+  - **`npm install --ignore-scripts`** skips `postinstall` scripts — that's the main vector for arbitrary code execution at install time. Some packages legitimately need them; if you're paranoid, install with the flag and selectively re-enable scripts for packages you trust.
+  - **Avoid `npm install -g`** unless you really need a global binary. Globals install with broader permissions and stick around forever.
+  - **Be skeptical of brand-new versions** of dependencies you didn't update on purpose. Compromised maintainer accounts publish malicious versions of legit packages. If something updated 2 days ago and now wants to run a postinstall, look at it first.
+- **Same goes for `.env` files and any "paste this command" instruction** anywhere in this repo. If something says "run X", check what X is.
+
+StayBattle is open source under AGPL v3, so you can audit everything. That only helps if you actually look.
+
+</details>
 
 The installer does exactly four things: check Docker is installed, pull the image, mount a data folder, run the container. Nothing else. No telemetry, no analytics, no remote callbacks.
 
