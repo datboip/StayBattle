@@ -101,7 +101,3 @@ ramps, wordmark spacing/clearspace, do's and don'ts, and
 downloadable assets is at:
 
 **🎨 [staybattle.com/brand](https://staybattle.com/brand)**
-
-Source for that page lives in
-[`datboip/staybattle-site`](https://github.com/datboip/staybattle-site)
-under `brand/index.html`.

@@ -79,7 +79,15 @@ docs/screenshots/private-*.png
 /public/audit/
 *.backup
 
-# Playwright MCP session data + ad-hoc test screenshots
+# Playwright MCP session data + ad-hoc QA artifacts
 /.playwright-mcp/
 /test-*.png
 /test*-*.png
+# Manual QA-run screenshots (lifecycle / demo / live-app / mobile flows)
+/demo-*.png
+/lifecycle-*.png
+/live-app-*.png
+/live-app-*.html
+/mobile-*.png
+/rtl-*.png
+/snap-*.txt

@@ -183,10 +183,13 @@ journal so it doesn't persist.
   battle close).
 - **Don't expose the box's filesystem to other users.** The DB is
   unencrypted; full-disk encryption on the host is the right defense.
-- **Daily backups** if you're past demo mode — see
-  [`staybattle-site/infra/DEPLOY.md`](https://github.com/datboip/staybattle-site/blob/master/infra/DEPLOY.md#database-backups-daily-sqlite-snapshots)
-  for the staged-but-disabled cron and the "flipping out of demo
-  mode" checklist.
+- **Daily backups** if you're past demo mode. Recommended pattern:
+  a `systemd` oneshot that runs `sqlite3 .backup` (consistent against
+  in-flight writes) into a backups dir, fired by a daily timer with
+  `Persistent=true` so a stretch of downtime catches up on next boot.
+  Same-box backups don't survive disk failure — wire an off-box
+  destination (S3, rclone to R2, scp to a separate host) before you
+  flip out of demo mode.
 
 ---
 
