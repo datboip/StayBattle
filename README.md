@@ -7,6 +7,7 @@
 **Settle the vacation argument.**
 Pit Airbnb listings against each other. Rate, argue in the comments, settle it on the map.
 
+[![Latest release](https://img.shields.io/github/v/release/datboip/StayBattle?sort=semver&color=brightgreen)](https://github.com/datboip/StayBattle/releases/latest)
 [![CI](https://github.com/datboip/StayBattle/actions/workflows/ci.yml/badge.svg)](https://github.com/datboip/StayBattle/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL_v3-blue.svg)](LICENSE)
 [![Made with Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
@@ -133,7 +134,7 @@ You still book on Airbnb. StayBattle is the meeting table, not the storefront.
 </tr>
 <tr>
 <td><b>Mobile-first.</b> Sign-in, voting, comments, drop-pin, swipe-review — all responsive. Your crew uses their phones, this works on their phones.</td>
-<td><b>Trophy case.</b> Past battles get archived as gold/silver/bronze podiums. Dates round to month-only and the clickable Airbnb URL is stripped on archive — the case is a memento, not a permanent doxxing surface.</td>
+<td><b>Trophy case.</b> Past battles get archived as gold/silver/bronze podiums. Dates round to month-only and the clickable Airbnb URL is stripped on archive — the case is a memento, not a permanent record of where and when the crew was.</td>
 </tr>
 </table>
 
@@ -234,7 +235,7 @@ Invite links use a URL fragment (`#invite=ABCDEF`) so the code never reaches ser
 - **OSRM** (`router.project-osrm.org` by default, configurable) for drive-time routing
 - **cheerio** for HTML parsing
 - **scrypt** (Node built-in) for PIN hashing
-- **Vitest** for tests (144 covering rank, podium, distance, routing, requirements, place-dedup, geocode, scrape, validate, auth, battle, trip, title, invite, rate-limit, availability)
+- **Vitest** for tests (~150 covering rank, podium, distance, routing, requirements, place-dedup, geocode, scrape, validate, auth, battle, trip, title, invite, rate-limit, availability)
 
 ## Development
 
@@ -300,7 +301,7 @@ Each user is responsible for their own use of this software with respect to Airb
 
 Terms of service for users of the live demo at app.staybattle.com are in [TOS.md](TOS.md). Privacy practices are in [PRIVACY.md](PRIVACY.md). Security policy + DMCA takedown procedure are in [SECURITY.md](SECURITY.md).
 
-If you're with Airbnb and want to talk — partnership, licensing, or anything in between — the maintainer email is in the git log, and formal takedown requests go through the channel documented in [SECURITY.md](SECURITY.md).
+If you're with Airbnb and want to talk — partnership, licensing, or anything in between — open a **[GitHub Private Security Advisory](https://github.com/datboip/StayBattle/security/advisories/new)** (use "Contact" as the title; the channel is private to the maintainer). Formal takedown requests use the same channel — full procedure in [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
@@ -308,7 +309,7 @@ StayBattle is **AGPL v3** — see [LICENSE](LICENSE). The spirit:
 
 > *Use it freely. Fork it, run it for your crew, modify it. But if you improve it — share your improvements back. The whole point is that we all benefit from each other's work.*
 
-If you fork it, polish it, deploy it for your group: please open a PR with your improvements, or at least share them publicly under AGPL so others can pick them up. If you want to build something proprietary on top of it that you don't want to AGPL-license, please reach out instead of forking quietly.
+If you fork it, polish it, deploy it for your group: please open a PR with your improvements, or at least share them publicly under AGPL so others can pick them up. If you want to build something proprietary on top of it that you don't want to AGPL-license, open a **[GitHub Private Security Advisory](https://github.com/datboip/StayBattle/security/advisories/new)** (use "Licensing inquiry" as the title) instead of forking quietly.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev workflow and PR checklist.
 
