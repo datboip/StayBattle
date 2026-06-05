@@ -2,6 +2,9 @@
 /**
  * Capture screenshots of the running app for the README.
  *
+ * Full regen recipe (seed DB → spin demo dev server → capture):
+ *   see CONTRIBUTING.md → "Updating screenshots".
+ *
  * Assumes:
  *   - dev server up at http://localhost:3000
  *   - a battle exists with at least a handful of listings

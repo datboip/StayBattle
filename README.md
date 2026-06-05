@@ -235,40 +235,9 @@ Invite links use a URL fragment (`#invite=ABCDEF`) so the code never reaches ser
 - **OSRM** (`router.project-osrm.org` by default, configurable) for drive-time routing
 - **cheerio** for HTML parsing
 - **scrypt** (Node built-in) for PIN hashing
-- **Vitest** for tests (~150 covering rank, podium, distance, routing, requirements, place-dedup, geocode, scrape, validate, auth, battle, trip, title, invite, rate-limit, availability)
+- **Vitest** for the test suite
 
-## Development
-
-```bash
-npm run dev          # start the dev server
-npm run typecheck    # tsc --noEmit
-npm test             # run the test suite (vitest)
-npm run test:watch   # vitest in watch mode
-npm run build        # production build
-npm start            # serve the production build
-```
-
-CI runs typecheck, tests, and build on every push and PR (`.github/workflows/ci.yml`). A separate workflow (`.github/workflows/docker.yml`) builds and publishes the Docker image to GHCR on every push to `main` and on every tag.
-
-### Regenerating screenshots
-
-The README's screenshots all live in [`docs/screenshots/`](docs/screenshots/) and are committed to git. To regenerate them:
-
-```bash
-# 1. Build a clean demo DB from the real DB's listings + fake social data
-node scripts/screenshots/seed-demo.mjs
-
-# 2. Spin up a second dev server pointed at the demo DB
-STAYBATTLE_DB_DIR=./data-demo STAYBATTLE_DEMO_MODE=true npx next dev --port 3001
-
-# 3. Capture screenshots (in another terminal)
-BASE_URL=http://localhost:3001 \
-  DEMO_VOTER_ID=$(sqlite3 data-demo/quickie.db "select id from voters where name='Alex'") \
-  DEMO_VOTER_NAME=Alex \
-  node scripts/screenshots/capture.mjs
-```
-
-The capture script also bakes phone-frame mockups (`iphone-review-mode.png`, `pixel-review-mode.png`) by wrapping the mobile screenshots in an SVG iPhone / Pixel frame + iOS-style status bar at the top.
+CI runs typecheck, tests, and build on every push and PR. A separate workflow publishes the multi-arch Docker image to GHCR on every push to `main` and on every tag. Dev workflows and the screenshot-regen recipe live in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Privacy
 

@@ -13,6 +13,45 @@ npm run dev
 
 Open <http://localhost:3000>.
 
+## Dev scripts
+
+```bash
+npm run dev          # start the dev server
+npm run typecheck    # tsc --noEmit
+npm test             # run the test suite (vitest)
+npm run test:watch   # vitest in watch mode
+npm run build        # production build
+npm start            # serve the production build
+```
+
+CI runs `typecheck`, `test`, and `build` on every push and PR
+(`.github/workflows/ci.yml`). A separate workflow
+(`.github/workflows/docker.yml`) builds and publishes the multi-arch
+Docker image to GHCR on every push to `main` and on every tag —
+README typo fixes and other doc-shaped commits skip the Docker
+workflow via the workflow's `paths-ignore`, so you won't burn 20+ min
+of Actions time on a one-line CHANGELOG edit.
+
+## Updating screenshots
+
+The README's screenshots all live in [`docs/screenshots/`](docs/screenshots/) and are committed to git. If your PR meaningfully changes the UI (new component, new card layout, retooled review mode, etc.), regenerate the affected ones so the README doesn't go stale.
+
+```bash
+# 1. Build a clean demo DB from the real DB's listings + fake social data
+node scripts/screenshots/seed-demo.mjs
+
+# 2. Spin up a second dev server pointed at the demo DB
+STAYBATTLE_DB_DIR=./data-demo STAYBATTLE_DEMO_MODE=true npx next dev --port 3001
+
+# 3. Capture screenshots (in another terminal)
+BASE_URL=http://localhost:3001 \
+  DEMO_VOTER_ID=$(sqlite3 data-demo/quickie.db "select id from voters where name='Alex'") \
+  DEMO_VOTER_NAME=Alex \
+  node scripts/screenshots/capture.mjs
+```
+
+The capture script also bakes phone-frame mockups (`iphone-review-mode.png`, `pixel-review-mode.png`) by wrapping the mobile shots in an SVG iPhone / Pixel frame + iOS-style status bar at the top. See the top of [`scripts/screenshots/capture.mjs`](scripts/screenshots/capture.mjs) for what each shot exercises.
+
 ## Project shape
 
 - `src/app/page.tsx` — server component that fetches listings + places
