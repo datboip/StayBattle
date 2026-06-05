@@ -13,6 +13,14 @@ on:
       - ".github/ISSUE_TEMPLATE/**"
       - ".github/PULL_REQUEST_TEMPLATE.md"
       - ".gitignore"
+      # The runner stage of the Dockerfile doesn't COPY scripts/, so
+      # changes to operator/dev-only scripts produce an identical
+      # runtime image. EXCLUDED from this list: scripts/build-version.mjs,
+      # which IS invoked via the prebuild hook and affects the bundle.
+      - "scripts/admin/**"
+      - "scripts/screenshots/**"
+      - "scripts/probe-photos.mjs"
+      - "scripts/refresh-demo-dates.mjs"
     tags: ["v*"]
   workflow_dispatch:
 
