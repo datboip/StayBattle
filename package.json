@@ -19,13 +19,13 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@radix-ui/react-slider": "^1.4.0",
-    "better-sqlite3": "^12.10.1",
+    "@radix-ui/react-slider": "^1.4.7",
+    "better-sqlite3": "^13.0.3",
     "cheerio": "^1.2.0",
     "leaflet": "^1.9.4",
-    "next": "16.2.9",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "next": "16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-leaflet": "^5.0.0",
     "zod": "^4.4.3"
   },
