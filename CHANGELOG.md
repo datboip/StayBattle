@@ -4,6 +4,10 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-09-02
+
+Patch release: un-bricks plain-http self-hosts.
+
 ### Fixed
 - **Plain-http self-hosts were stuck on "Loading…".** v0.4.1 added `upgrade-insecure-requests` + HSTS to the production CSP unconditionally. Browsers honour the upgrade directive even on `http://` origins, so a LAN install at `http://192.168.x.x:3000` had every `/_next/static` chunk rewritten to `https://` and failing with `ERR_SSL_PROTOCOL_ERROR` — no JS ran, so the page never hydrated past the SSR "Loading…" fallback. Both directives are now opt-in via `STAYBATTLE_HTTPS=true` (a build-time flag / Docker build arg) for TLS-terminated deployments. Header logic moved to `src/lib/security-headers.ts` with vitest coverage.
 
