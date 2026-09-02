@@ -192,6 +192,7 @@ StayBattle works with zero config. If you want to tweak:
 | `STAYBATTLE_PORT` | `3000` | Port for the install script. |
 | `STAYBATTLE_DIR`  | `~/staybattle` | Where SQLite + data live. |
 | `STAYBATTLE_DB_DIR` | `./data` | Where the SQLite DB lives (production override). |
+| `STAYBATTLE_HTTPS` | (unset) | Set to `true` **at build time** (`STAYBATTLE_HTTPS=true npm run build`, or `docker compose build --build-arg STAYBATTLE_HTTPS=true`) when the app sits behind a TLS terminator (nginx/Caddy/Cloudflare). Enables `upgrade-insecure-requests` + HSTS. Leave unset for plain-http LAN use or the browser will try to load every asset over https and the page sticks on "Loading…". |
 | `STAYBATTLE_DEMO_MODE` | (unset) | When `true`: skip Airbnb GraphQL availability calls, use pre-baked statuses (avoids rate-limiting). Used by the public demo. |
 | `STAYBATTLE_OSRM_URL` | `https://router.project-osrm.org` | OSRM server for drive-time routing on the "Nearby" pills. Point at a self-hosted OSRM when traffic outgrows the public demo. |
 | `NEXT_ALLOWED_DEV_ORIGINS` | (unset) | Extra hostnames allowed to hit dev-mode HMR. Private RFC1918 IP ranges already match. |

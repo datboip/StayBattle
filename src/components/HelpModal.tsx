@@ -647,9 +647,13 @@ export function HelpButton({
                   <strong className="text-zinc-100">
                     Stuck on &ldquo;Loading…&rdquo;
                   </strong>{" "}
-                  — The dev server is blocking your host. Tell the server
-                  admin to add your domain to <code>allowedDevOrigins</code>{" "}
-                  in <code>next.config.ts</code>. Most tunnel domains are
+                  — Two usual causes. On a plain <code>http://</code> address
+                  (LAN IP, no TLS): the server was built with{" "}
+                  <code>STAYBATTLE_HTTPS=true</code>, which makes browsers
+                  demand https for every asset — rebuild without it. On a dev
+                  server: your host isn&apos;t in{" "}
+                  <code>allowedDevOrigins</code> in{" "}
+                  <code>next.config.ts</code>. Most tunnel domains are
                   already covered.
                 </p>
                 <p>
