@@ -9,6 +9,7 @@ import { shortDisplayName } from "@/lib/title";
 import type { ListingWithStats } from "@/lib/types";
 import { PhotoStrip } from "./PhotoStrip";
 import { Lightbox } from "./Lightbox";
+import { AvailabilityBadge } from "./AvailabilityBadge";
 import { SubmissionTeaser } from "./SubmissionTeaser";
 import { confirmDialog } from "./Modal";
 
@@ -143,6 +144,9 @@ function MySubmissionCard({
             </>
           )}
         </p>
+        <div>
+          <AvailabilityBadge listing={listing} tripDates={tripDates} />
+        </div>
       </div>
       <SalesPitch listing={listing} />
       <div className="mt-auto flex items-center justify-end border-t border-zinc-900 px-3 py-2 font-mono text-[10px] uppercase tracking-wider">

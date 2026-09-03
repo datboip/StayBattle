@@ -51,6 +51,12 @@ export function AvailabilityBadge({
   const cachedKey = listing.availability_dates_key;
   const isStale = !cachedKey || cachedKey !== wantKey;
   const { status, overridden, overriddenTo } = effectiveStatus(listing);
+  // The exact reason Airbnb gave for an auto-detected "booked" (e.g.
+  // "Minimum stay is 3 nights") — stored but previously never shown.
+  const reason =
+    !overridden && status === "unavailable" && !isStale
+      ? listing.unavailability_reason?.trim() || null
+      : null;
 
   let label: string;
   let className: string;
@@ -87,8 +93,9 @@ export function AvailabilityBadge({
     className =
       "border-rose-500/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20";
     dotClass = "bg-rose-400 shadow-[0_0_6px_rgba(244,63,94,0.7)]";
-    title =
-      "Airbnb's booking widget refuses these dates (booked, min-stay, etc.). Click for details.";
+    title = reason
+      ? `${reason}. Click to verify on Airbnb.`
+      : "Airbnb's booking widget refuses these dates (booked, min-stay, etc.). Click for details.";
   } else {
     label = "verify dates ↗";
     className =
@@ -109,6 +116,11 @@ export function AvailabilityBadge({
         <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
         {label}
       </button>
+      {reason && (
+        <span className="ml-1.5 align-middle text-[10px] font-medium text-rose-300/90">
+          {reason}
+        </span>
+      )}
       {open && (
         <AvailabilityDialog
           listing={listing}
