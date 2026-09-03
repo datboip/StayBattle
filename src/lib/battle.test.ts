@@ -3,6 +3,7 @@ import {
   deadlinePassed,
   effectivePhase,
   formatDeadlineCountdown,
+  isStale,
   type Battle,
 } from "./battle";
 
@@ -70,5 +71,25 @@ describe("formatDeadlineCountdown", () => {
   it("says deadline passed when negative", () => {
     const b = mk({ submission_deadline: "2030-08-01T11:00:00Z" });
     expect(formatDeadlineCountdown(b, NOW)).toBe("deadline passed");
+  });
+});
+
+describe("isStale", () => {
+  // Auto-archive rule: 7 full days after the check-out day has ended.
+  it("never stale without a check-out date", () => {
+    expect(isStale(mk({ check_out: null }), Date.parse("2031-01-01T00:00:00Z"))).toBe(false);
+  });
+  it("not stale while the grace week is still running", () => {
+    const b = mk({ check_out: "2030-08-15" });
+    expect(isStale(b, Date.parse("2030-08-16T12:00:00Z"))).toBe(false);
+    expect(isStale(b, Date.parse("2030-08-22T23:59:59Z"))).toBe(false);
+  });
+  it("stale once 7 full days have passed after check-out day", () => {
+    const b = mk({ check_out: "2030-08-15" });
+    expect(isStale(b, Date.parse("2030-08-23T00:00:00Z"))).toBe(true);
+    expect(isStale(b, Date.parse("2030-09-30T00:00:00Z"))).toBe(true);
+  });
+  it("ignores garbage dates", () => {
+    expect(isStale(mk({ check_out: "not-a-date" }), Date.parse("2031-01-01T00:00:00Z"))).toBe(false);
   });
 });

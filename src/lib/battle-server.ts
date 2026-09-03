@@ -1,7 +1,9 @@
 import "server-only";
 import { db, newId } from "./db";
 import type { Battle, BattlePhase, Participant } from "./battle";
-import { deadlinePassed, generateInviteCode } from "./battle";
+import { deadlinePassed, generateInviteCode, isStale } from "./battle";
+import { archiveCurrentBattle } from "./past-battles-server";
+import { setTripDates } from "./trip-server";
 
 const SETTINGS_KEY = "battle";
 
@@ -36,6 +38,13 @@ function writeRow(b: Battle) {
 export function getCurrentBattle(): Battle | null {
   const battle = readRow();
   if (!battle) return null;
+  // Trip ended over a week ago: archive it exactly as "close battle" would
+  // and report no current battle, so the next visitor can start fresh
+  // without hunting down the organizer's PIN.
+  if (isStale(battle)) {
+    closeCurrentBattle(battle);
+    return null;
+  }
   if (battle.phase === "submission" && deadlinePassed(battle)) {
     const flipped: Battle = {
       ...battle,
@@ -166,6 +175,31 @@ export function patchBattle(patch: Partial<Battle>): Battle | null {
   const next: Battle = { ...cur, ...patch };
   writeRow(next);
   return next;
+}
+
+/**
+ * Archive `current` to the trophy case and clear everything scoped to it
+ * (listings, pins, participants, trip dates, the battle row itself).
+ * Shared by the organizer's explicit "close battle" action and the
+ * stale auto-archive in getCurrentBattle() so the two can't drift.
+ */
+export function closeCurrentBattle(current: Battle): void {
+  const tx = db.transaction(() => {
+    archiveCurrentBattle({
+      id: current.id,
+      name: current.name,
+      check_in: current.check_in,
+      check_out: current.check_out,
+      organizer_name: current.organizer_name,
+      created_at: current.created_at,
+    });
+    db.prepare("delete from listings").run();
+    db.prepare("delete from places").run();
+    db.prepare("delete from participants where battle_id = ?").run(current.id);
+    deleteBattle();
+    setTripDates({ checkIn: null, checkOut: null });
+  });
+  tx();
 }
 
 export function deleteBattle(): void {

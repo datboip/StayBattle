@@ -17,6 +17,9 @@ Patch release: un-bricks plain-http self-hosts.
 - **"New code" / "Kick" silently did nothing on refusal.** `InviteCodePanel` ignored the action result, so an expired session or a non-organizer cookie made the confirm dialog close with no visible effect. Refusals now render inline.
 - **Demo modal header was a black smear in light mode.** Its `bg-gradient-to-br … via-zinc-950` gradient wasn't covered by the light-theme surface remap (which can't reach gradient stops). Tagged with the existing `.sb-deep-surface` helper so it swaps like the other dark gradient surfaces.
 
+### Added
+- **Stale battles archive themselves.** A battle whose check-out day ended more than 7 days ago is moved to the trophy case on the next page load, exactly as the organizer's "close battle" does (listings, pins, participants, and trip dates cleared). Before, a trip that ended months ago blocked the whole one-battle-per-server instance until its organizer signed in with their PIN. Battles with no dates never go stale. `isStale()` in `src/lib/battle.ts` (unit-tested) + a shared `closeCurrentBattle()` in `battle-server.ts` used by both paths (DB-level test).
+
 ### Changed
 - **Demo discloses what is simulated.** Sign-in screen gets a "Public demo" hint (anonymous visitors never saw the demo modal), the demo modal explains that badges / votes / comments are seed data, and the footer disclaimer has a demo-mode variant instead of claiming badges were "scraped from Airbnb's public page".
 - `vitest.config.ts` aliases the `server-only` marker package so server-action modules can be imported in tests.

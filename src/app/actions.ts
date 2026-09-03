@@ -19,6 +19,7 @@ import {
   patchBattle,
   getCurrentBattle,
   deleteBattle,
+  closeCurrentBattle,
   addParticipant,
   removeParticipant,
   isParticipant,
@@ -26,7 +27,6 @@ import {
 } from "@/lib/battle-server";
 import { normalizeInviteCode, type Battle } from "@/lib/battle";
 import {
-  archiveCurrentBattle,
   deletePastBattle as removePastBattle,
 } from "@/lib/past-battles-server";
 import {
@@ -1129,20 +1129,7 @@ export async function resetBattle(_organizerId: string): Promise<ActionResult> {
 export async function closeBattle(_organizerId: string): Promise<ActionResult> {
   const auth = await requireOrganizer();
   if (!auth.ok) return auth;
-  const current = auth.battle;
-  archiveCurrentBattle({
-    id: current.id,
-    name: current.name,
-    check_in: current.check_in,
-    check_out: current.check_out,
-    organizer_name: current.organizer_name,
-    created_at: current.created_at,
-  });
-  db.prepare("delete from listings").run();
-  db.prepare("delete from places").run();
-  db.prepare("delete from participants where battle_id = ?").run(current.id);
-  deleteBattle();
-  writeTripDates({ checkIn: null, checkOut: null });
+  closeCurrentBattle(auth.battle);
   revalidatePath("/");
   return { ok: true };
 }

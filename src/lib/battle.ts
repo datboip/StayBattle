@@ -70,6 +70,30 @@ export function deadlinePassed(battle: Battle, now: number = Date.now()): boolea
   return Number.isFinite(d) && d <= now;
 }
 
+/** Days the crew can still see the podium after check-out before auto-archive. */
+export const STALE_GRACE_DAYS = 7;
+
+/**
+ * A battle is stale once `graceDays` full days have passed after its
+ * check-out day (UTC). Stale battles are auto-archived to the trophy case
+ * on the next read — otherwise, since the server hosts one battle at a
+ * time, a trip that ended months ago blocks everyone until its organizer
+ * signs back in. No check-out date (or an unparseable one) = never stale.
+ */
+export function isStale(
+  battle: Pick<Battle, "check_out">,
+  now: number = Date.now(),
+  graceDays: number = STALE_GRACE_DAYS,
+): boolean {
+  if (!battle.check_out) return false;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(battle.check_out);
+  if (!m) return false;
+  const dayStart = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (!Number.isFinite(dayStart)) return false;
+  // +1 so the check-out day itself counts as day 0 of the grace period.
+  return now >= dayStart + (graceDays + 1) * 86_400_000;
+}
+
 /**
  * What phase should the battle actually be in right now, given the wall clock?
  * If we wrote "submission" to the DB but the deadline has passed, the caller
