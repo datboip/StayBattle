@@ -51,6 +51,10 @@ export function InviteCodePanel({
     null,
   );
   const [isPending, startTransition] = useTransition();
+  // Refusal from regenerateInviteCode / kickParticipant ("Sign in first",
+  // "Organizer only", stale cookie…). Without surfacing it the confirm
+  // dialog closes and nothing visibly happens.
+  const [actionError, setActionError] = useState<string | null>(null);
   const codeRef = useRef<HTMLSpanElement>(null);
   const hiddenLinkRef = useRef<HTMLTextAreaElement>(null);
 
@@ -145,8 +149,13 @@ export function InviteCodePanel({
       confirm: "New code",
     });
     if (!ok) return;
+    setActionError(null);
     startTransition(async () => {
-      await regenerateInviteCode(voter.id);
+      const res = await regenerateInviteCode(voter.id);
+      if (!res.ok) {
+        setActionError(res.error);
+        return;
+      }
       router.refresh();
     });
   };
@@ -169,8 +178,13 @@ export function InviteCodePanel({
       cancel: "Keep votes counted",
       tone: "danger",
     });
+    setActionError(null);
     startTransition(async () => {
-      await kickParticipant(voter.id, vid, removeVotes);
+      const res = await kickParticipant(voter.id, vid, removeVotes);
+      if (!res.ok) {
+        setActionError(res.error);
+        return;
+      }
       router.refresh();
     });
   };
@@ -183,6 +197,15 @@ export function InviteCodePanel({
           organizer only
         </span>
       </header>
+
+      {actionError && (
+        <p
+          role="alert"
+          className="rounded-sm border border-rose-500/40 bg-rose-500/5 px-3 py-2 text-xs text-rose-200"
+        >
+          {actionError}
+        </p>
+      )}
 
       <textarea
         ref={hiddenLinkRef}
