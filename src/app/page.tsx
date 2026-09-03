@@ -1,4 +1,5 @@
 import { fetchAllListings, fetchAllPlaces } from "@/lib/data";
+import { readRouteCache, writeRouteCache } from "@/lib/route-cache";
 import { getTripDates } from "@/lib/trip-server";
 import {
   getCurrentBattle,
@@ -47,20 +48,38 @@ async function buildDriveDurations(
     (p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude),
   );
   if (origins.length === 0 || dests.length === 0) return new Map();
+
+  // Cache-first: a drive time between two fixed points never changes, so we
+  // only call OSRM when a new listing/place introduces an uncached pair.
+  // Otherwise the 6s SSR refresh would hammer the public OSRM demo server.
+  const pairs = origins.flatMap((l) =>
+    dests.map((p) => ({ listingId: l.id, placeId: p.id })),
+  );
+  const { cached, missing } = readRouteCache(pairs);
+  const map = new Map<string, number>();
+  for (const { listingId, placeId } of pairs) {
+    const v = cached.get(`${listingId}:${placeId}`);
+    if (typeof v === "number" && v >= 0) map.set(`${listingId}:${placeId}`, v);
+  }
+  if (missing.length === 0) return map;
+
   const matrix = await fetchDriveMatrix(
     origins.map((l) => ({ lat: l.latitude, lng: l.longitude })),
     dests.map((p) => ({ lat: p.latitude, lng: p.longitude })),
   );
-  if (!matrix) return new Map();
-  const map = new Map<string, number>();
+  if (!matrix) return map; // OSRM down — serve whatever the cache had.
+
+  const entries: { listingId: string; placeId: string; seconds: number }[] = [];
   for (let i = 0; i < origins.length; i++) {
     for (let j = 0; j < dests.length; j++) {
       const seconds = matrix[i]?.[j];
-      if (typeof seconds === "number" && seconds >= 0) {
-        map.set(`${origins[i].id}:${dests[j].id}`, seconds);
-      }
+      const val =
+        typeof seconds === "number" && seconds >= 0 ? Math.round(seconds) : -1;
+      entries.push({ listingId: origins[i].id, placeId: dests[j].id, seconds: val });
+      if (val >= 0) map.set(`${origins[i].id}:${dests[j].id}`, val);
     }
   }
+  writeRouteCache(entries); // -1 rows included so no-route pairs stay cached
   return map;
 }
 

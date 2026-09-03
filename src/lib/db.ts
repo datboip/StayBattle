@@ -114,6 +114,13 @@ const SCHEMA_STATEMENTS = [
   // The URL is the natural primary key — same canonical form
   // `validateAirbnbUrl()` produces, so a copy-paste of an already-blocked
   // URL matches without any normalization at the call site.
+  `create table if not exists route_durations (
+    listing_id text not null,
+    place_id text not null,
+    seconds integer not null,
+    computed_at text not null default (datetime('now')),
+    primary key (listing_id, place_id)
+  )`,
   `create table if not exists blocked_urls (
     url text primary key,
     reason text,

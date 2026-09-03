@@ -9,6 +9,9 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 - **Submission photos stay blind against members too.** During the submission phase the server sent every member the full listing objects (URLs, titles, coordinates, comments, submitter ids) and only hid them visually. Non-owned submissions now leave the server as `{ id, photos }` only; full detail is sent for your own submissions.
 - **`castVote` / `addComment` require battle membership.** They checked identity but not membership or phase, and trusted the client-supplied display name. Votes now require the voting phase, both require membership, and both attribute to the authenticated name rather than whatever the client sends.
 
+### Added
+- **Drive times are cached.** The listing×place OSRM matrix was recomputed on every 6-second render, which could blow past the public OSRM demo server's 1-request/second limit with a few active voters. A `route_durations` table now caches each pair (a route between two fixed points never changes), so OSRM is only called when a new listing or place adds an uncached pair.
+
 ### Fixed
 - **Trophy-case delete button only shows for the organizer.** It rendered for any signed-in voter but the server rejected non-organizers, so it silently failed. Now gated to the current battle's organizer, matching the server.
 - **Closed battles respect organizer availability overrides in the podium.** The trophy calc kept a listing if it had any override at all; a listing the organizer marked "booked" could still win. It now uses the override's direction (`availability_override_status`).
