@@ -4,6 +4,11 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Fixed
+- **Airbnb UI icons no longer show up as listing photos.** The scrape's host-allowlist accepted any `muscache.com` URL, so Airbnb's own platform illustrations (`/im/pictures/airbnb-platform-assets/…` search-bar icons, the little-house and cartoon-person graphics) and host avatars leaked into the photo carousel. A stricter `isListingPhotoUrl()` now rejects those paths in both the GraphQL and HTML scrape paths; existing rows can be cleaned by re-scraping.
+- **Submissions teaser: "Frozen" now stops the scroll.** It previously only froze each tile's photo rotation, leaving the marquee drifting — so in the scrolling view "Frozen" looked like it did nothing. It now halts the scroll too.
+- **Submissions teaser: no more blank gap in the scrolling strip.** With few submissions a row was narrower than the screen and the wrap-around exposed an empty tile; rows now repeat enough to always fill the width.
+
 ## [0.4.3] — 2026-09-03
 
 Setup-flow papercuts.

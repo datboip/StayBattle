@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { isListingPhotoUrl } from "./airbnb-graphql";
 
 export type ScrapedListing = {
   airbnb_id: string | null;
@@ -186,20 +187,14 @@ function extractPhotos(
   // pulls in additional carousel images that aren't in JSON-LD.
   $("img").each((_, el) => {
     const src = $(el).attr("src") || $(el).attr("data-src") || "";
-    if (
-      src.includes("muscache.com") &&
-      !src.includes("profile_pic") &&
-      !src.includes("/avatars/") &&
-      !src.includes("/users/")
-    ) {
-      set.add(src);
-    }
+    if (isListingPhotoUrl(src)) set.add(src);
   });
 
   // Cap at 50 — matches the merge cap in availability-queue.ts so the
   // seed doesn't get pre-trimmed before PHOTO_TOUR_SCROLLABLE_MODAL adds
-  // the rest of the album on the first availability check.
-  return Array.from(set).slice(0, 50);
+  // the rest of the album on the first availability check. Filter out any
+  // non-photo assets (icons/avatars) that slipped in via JSON-LD too.
+  return Array.from(set).filter(isListingPhotoUrl).slice(0, 50);
 }
 
 function extractLocation(rental: JsonLdNode | null): string | null {

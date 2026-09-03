@@ -348,7 +348,7 @@ function extractPhotosFromSections(list: SectionEntry[]): string[] {
     for (const item of containers) {
       const url = item?.baseUrl || item?.url || item?.picture;
       if (typeof url !== "string" || !url || seen.has(url)) continue;
-      if (!isAirbnbCdnUrl(url)) continue;
+      if (!isListingPhotoUrl(url)) continue;
       seen.add(url);
       out.push(url);
     }
@@ -385,6 +385,26 @@ export function isAirbnbCdnUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * A real listing photo, not an Airbnb UI asset. `isAirbnbCdnUrl` only checks
+ * the host, but muscache also serves platform illustrations (the little house
+ * icon, the cartoon "search" figure under /airbnb-platform-assets/) and host
+ * avatars/profile pics — those leaked into the photo carousel. Reject those
+ * paths so only actual room photography lands in the DB.
+ */
+export function isListingPhotoUrl(url: string): boolean {
+  if (!isAirbnbCdnUrl(url)) return false;
+  const lower = url.toLowerCase();
+  const NON_PHOTO = [
+    "airbnb-platform-assets", // search-bar icons, category illustrations, etc.
+    "profile_pic",
+    "/avatars/",
+    "/im/users/",
+    "/users/",
+  ];
+  return !NON_PHOTO.some((frag) => lower.includes(frag));
 }
 
 function extractAmenities(

@@ -192,8 +192,8 @@ function ScrollStrip({
   return (
     <div className="relative overflow-hidden rounded-sm">
       <div className="flex flex-col gap-2">
-        <ScrollRow tiles={rowA} cycle={cycle} direction="left" speed={SCROLL_PX_PER_SEC} />
-        <ScrollRow tiles={rowB} cycle={cycle} direction="right" speed={SCROLL_PX_PER_SEC * 0.78} />
+        <ScrollRow tiles={rowA} cycle={cycle} frozen={!cycle} direction="left" speed={SCROLL_PX_PER_SEC} />
+        <ScrollRow tiles={rowB} cycle={cycle} frozen={!cycle} direction="right" speed={SCROLL_PX_PER_SEC * 0.78} />
       </div>
       <div
         aria-hidden="true"
@@ -210,20 +210,33 @@ function ScrollStrip({
 function ScrollRow({
   tiles,
   cycle,
+  frozen,
   direction,
   speed,
 }: {
   tiles: { id: string; photos: string[] }[];
   cycle: boolean;
+  frozen: boolean;
   direction: "left" | "right";
   speed: number;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const offsetRef = useRef(0);
   const pausedRef = useRef(false);
+  // Read `frozen` live inside the rAF loop without restarting it.
+  const frozenRef = useRef(frozen);
+  frozenRef.current = frozen;
 
-  // Duplicate to allow seamless wrap-around.
-  const looped = useMemo(() => [...tiles, ...tiles], [tiles]);
+  // Repeat the tiles so one "copy" is always wider than the viewport — with
+  // few submissions a single copy is narrower than the screen, and the
+  // wrap-around then exposes a blank gap at the row's end. Then duplicate the
+  // whole thing for the seamless loop.
+  const looped = useMemo(() => {
+    if (tiles.length === 0) return [];
+    const reps = Math.max(2, Math.ceil(16 / tiles.length));
+    const base = Array.from({ length: reps }).flatMap(() => tiles);
+    return [...base, ...base];
+  }, [tiles]);
 
   useEffect(() => {
     let raf = 0;
@@ -235,7 +248,7 @@ function ScrollRow({
       const dt = (ts - lastTs) / 1000;
       lastTs = ts;
       const node = trackRef.current;
-      if (node && !pausedRef.current) {
+      if (node && !pausedRef.current && !frozenRef.current) {
         offsetRef.current += speed * dt * sign;
         const halfWidth = node.scrollWidth / 2;
         if (halfWidth > 0) {
