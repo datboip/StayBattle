@@ -130,7 +130,16 @@ export function AvailabilityPanel({
     );
     setNewlyBookedCount(0);
     startRecheck(async () => {
-      await refreshAvailability(undefined, force);
+      const res = await refreshAvailability(undefined, force);
+      if (!res.ok) {
+        // Refused (demo mode, no trip dates, not organizer…) — nothing was
+        // queued, so drop the in-flight state now instead of showing
+        // "checking 0 of N…" until the hard upper-bound timer fires.
+        setRecheckStartedAt(null);
+        setPreCheckStatuses(null);
+        setLastResult(res.error);
+        return;
+      }
       router.refresh();
     });
     // Hard upper-bound: never stay locked longer than (listings * 2s + 5s).

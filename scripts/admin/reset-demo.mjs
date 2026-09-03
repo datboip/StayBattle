@@ -115,6 +115,14 @@ const tx = db.transaction(() => {
     try { db.prepare(`delete from ${t}`).run(); } catch {}
   }
 
+  // Re-arm the "already cleaned" flag we just deleted with the rest of
+  // settings. db.ts runs a one-shot availability wipe at boot when this
+  // key is absent — without it, the next container restart nulls every
+  // status we bake below and all listings sit on "checking…" forever.
+  db.prepare(
+    "insert or replace into settings (key, value) values ('availability_reset_v1', ?)",
+  ).run(startedAt);
+
   // Demo voters
   const voterIds = {};
   const insertVoter = db.prepare(

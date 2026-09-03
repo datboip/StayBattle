@@ -123,6 +123,26 @@ async function requireMember(): Promise<
  * given PIN. If it does, verify the PIN matches. Returns the canonical voter
  * id + display name on success.
  */
+// Public demo (STAYBATTLE_DEMO_MODE=true) never makes live Airbnb calls on
+// behalf of anonymous visitors: availability is pre-baked by the nightly
+// reset and the queue is a no-op, and README promises the listing scrape is
+// skipped. Actions that would trigger either refuse up front so the UI can
+// say why instead of silently scraping or spinning on a queue that never
+// drains. Read per-call (not at import) so tests can flip it.
+function isDemoMode(): boolean {
+  return process.env.STAYBATTLE_DEMO_MODE === "true";
+}
+const DEMO_NO_SCRAPE: ActionResult = {
+  ok: false,
+  error:
+    "The public demo can't fetch new listings from Airbnb — self-host StayBattle to add your own.",
+};
+const DEMO_NO_RECHECK: ActionResult = {
+  ok: false,
+  error:
+    "Availability is simulated in the public demo — no live Airbnb checks run here.",
+};
+
 export async function signIn(
   rawName: string,
   rawPin: string,
@@ -214,6 +234,7 @@ export async function addListing(
   addedByName: string,
   addedById: string = "",
 ): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_NO_SCRAPE;
   const auth = await requireSelf(cleanString(addedById, VOTER_ID_MAX));
   if (!auth.ok) return auth;
   const voterId = auth.voter.id;
@@ -851,6 +872,7 @@ export async function refreshAvailability(
   listingId?: string,
   force = false,
 ): Promise<ActionResult> {
+  if (isDemoMode()) return DEMO_NO_RECHECK;
   // Force-recheck (queueAll force=true) is expensive — only the organizer.
   // Single-listing recheck (listingId given) is cheap, any member can fire.
   if (force || !listingId) {

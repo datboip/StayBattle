@@ -115,7 +115,7 @@ export default async function Home() {
   const headerBattle = isMember ? battle : publicBattle;
 
   return (
-    <NameGate>
+    <NameGate demoMode={demoMode}>
       <DemoModal enabled={demoMode} />
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
         <HeaderBar battle={headerBattle} />
@@ -176,16 +176,28 @@ export default async function Home() {
             <p className="mb-1 font-mono text-[9px] uppercase tracking-wider text-amber-300/80">
               Heads up · double-check everything
             </p>
-            <p>
-              The availability badges are a best-effort guess scraped from
-              Airbnb&apos;s public page — they&apos;re wrong about 10–15%
-              of the time because real booking eligibility (minimum stay,
-              host approval, just-booked, calendar sync lag, total price)
-              is decided client-side after the page loads. <strong>Before
-              you commit to a place, click through to Airbnb and confirm
-              the dates, price, and reserve button yourself.</strong>{" "}
-              StayBattle helps you argue, not book.
-            </p>
+            {demoMode ? (
+              <p>
+                This is the public demo: the availability badges are{" "}
+                <strong>simulated seed data</strong>, not checked against
+                Airbnb. On a self-hosted install they&apos;re a best-effort
+                guess that&apos;s wrong about 10–15% of the time. Either
+                way, <strong>click through to Airbnb and confirm the
+                dates, price, and reserve button yourself.</strong>{" "}
+                StayBattle helps you argue, not book.
+              </p>
+            ) : (
+              <p>
+                The availability badges are a best-effort guess scraped from
+                Airbnb&apos;s public page — they&apos;re wrong about 10–15%
+                of the time because real booking eligibility (minimum stay,
+                host approval, just-booked, calendar sync lag, total price)
+                is decided client-side after the page loads. <strong>Before
+                you commit to a place, click through to Airbnb and confirm
+                the dates, price, and reserve button yourself.</strong>{" "}
+                StayBattle helps you argue, not book.
+              </p>
+            )}
           </div>
           <p className="text-[10px] leading-relaxed text-zinc-500">
             Unaffiliated with any listing service shown. · Self-hosted, provided AS IS{" "}

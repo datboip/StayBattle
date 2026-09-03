@@ -47,7 +47,7 @@ export function DemoModal({ enabled }: { enabled: boolean }) {
       }}
     >
       <div className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950 shadow-2xl">
-        <div className="border-b border-zinc-800 bg-gradient-to-br from-rose-500/10 via-zinc-950 to-cyan-500/10 px-6 py-5">
+        <div className="sb-deep-surface border-b border-zinc-800 px-6 py-5">
           <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-400">
             Demo mode
           </p>
@@ -79,6 +79,18 @@ export function DemoModal({ enabled }: { enabled: boolean }) {
             </p>
           </div>
 
+          <div className="rounded-md border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-[12px] leading-relaxed text-zinc-300">
+            <p className="mb-1 font-mono text-[9px] uppercase tracking-wider text-cyan-300/80">
+              What&apos;s real here
+            </p>
+            <p>
+              The listings are real Airbnb pages. Everything else is seed
+              data: the votes, comments, trophy case, and the{" "}
+              <strong className="text-zinc-100">available / booked badges</strong>{" "}
+              are made up and never checked against Airbnb. Re-check and
+              add-listing are disabled. Self-host for live availability.
+            </p>
+          </div>
           <div>
             <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
               Invite code

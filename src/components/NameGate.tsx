@@ -4,7 +4,14 @@ import { useId, useRef, useState, useTransition } from "react";
 import { signIn } from "@/app/actions";
 import { useVoter } from "@/lib/voter";
 
-export function NameGate({ children }: { children: React.ReactNode }) {
+export function NameGate({
+  children,
+  demoMode = false,
+}: {
+  children: React.ReactNode;
+  /** Public demo: tell anonymous visitors before they invent an account. */
+  demoMode?: boolean;
+}) {
   const { voter, ready, setVoter } = useVoter();
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
@@ -54,6 +61,21 @@ export function NameGate({ children }: { children: React.ReactNode }) {
                 Sign in to vote on the trip.
               </p>
             </div>
+
+            {demoMode && (
+              <div className="rounded-sm border border-cyan-500/30 bg-cyan-500/5 px-3 py-2 text-[11px] leading-relaxed text-cyan-100/90">
+                <p className="mb-0.5 font-mono text-[9px] uppercase tracking-wider text-cyan-300/80">
+                  Public demo
+                </p>
+                <p>
+                  Any name and PIN works. Try{" "}
+                  <span className="font-mono text-cyan-300">Sam / 2222</span>{" "}
+                  and invite code{" "}
+                  <span className="font-mono text-cyan-300">DEMO99</span>.
+                  Availability badges are simulated. Resets nightly.
+                </p>
+              </div>
+            )}
 
             <div className="rounded-sm border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs leading-relaxed text-zinc-300">
               <p>

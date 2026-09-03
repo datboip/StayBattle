@@ -30,6 +30,9 @@ export function BattleHeader({ battle }: { battle: Battle }) {
   const { voter } = useVoter();
   const [isPending, startTransition] = useTransition();
   const [now, setNow] = useState(Date.now());
+  // Refusal from refreshAvailability (demo mode, no trip dates…). Without
+  // surfacing it the button just flashes "rechecking…" and nothing happens.
+  const [recheckError, setRecheckError] = useState<string | null>(null);
 
   // Tick every minute so the countdown stays fresh without page reloads.
   useEffect(() => {
@@ -76,8 +79,13 @@ export function BattleHeader({ battle }: { battle: Battle }) {
                   type="button"
                   disabled={isPending}
                   onClick={() => {
+                    setRecheckError(null);
                     startTransition(async () => {
-                      await refreshAvailability();
+                      const res = await refreshAvailability();
+                      if (!res.ok) {
+                        setRecheckError(res.error);
+                        return;
+                      }
                       router.refresh();
                     });
                   }}
@@ -86,6 +94,11 @@ export function BattleHeader({ battle }: { battle: Battle }) {
                 >
                   {isPending ? "rechecking…" : "↻ recheck all dates"}
                 </button>
+                {recheckError && (
+                  <span role="status" className="text-xs text-amber-300">
+                    {recheckError}
+                  </span>
+                )}
               </>
             )}
           </p>

@@ -159,7 +159,7 @@ First time you use a name, you claim it with any 4–6 digit PIN. After that, th
 | | Live demo at <app.staybattle.com> | Self-hosted |
 |---|---|---|
 | **Data persistence** | Wiped nightly at 04:00 UTC | Forever (it's your SQLite file) |
-| **Airbnb scraping** | Pre-baked statuses (demo mode) | Real GraphQL availability check |
+| **Airbnb scraping** | None — availability badges are simulated seed data; add-listing and re-check are disabled | Real listing scrape + GraphQL availability check |
 | **Sign-in** | Use the 8 demo accounts above | Anyone with the URL claims a name |
 | **Cost** | Free, no signup | Free, no signup, your hardware |
 | **Best for** | Kicking the tires | Actual trip planning |
