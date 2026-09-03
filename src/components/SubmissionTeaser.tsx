@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { HypePin } from "./HypePin";
 
 const PREFS_KEY = "staybattle:teaser:v2";
 const SCROLL_PX_PER_SEC = 28;
@@ -56,7 +57,7 @@ function savePrefs(p: Prefs) {
 export function SubmissionTeaser({
   listings,
 }: {
-  listings: { id: string; photos: string[] }[];
+  listings: { id: string; photos: string[]; hype?: string | null }[];
 }) {
   const [prefs, setPrefs] = useState<Prefs>({ scroll: false, cycle: false });
   const [mounted, setMounted] = useState(false);
@@ -75,7 +76,7 @@ export function SubmissionTeaser({
   const tiles = useMemo(() => {
     return listings
       .filter((l) => l.photos.length > 0)
-      .map((l) => ({ id: l.id, photos: l.photos.slice(0, 5) }));
+      .map((l) => ({ id: l.id, photos: l.photos.slice(0, 5), hype: l.hype }));
   }, [listings]);
 
   if (tiles.length === 0) {
@@ -133,7 +134,7 @@ function StaticGrid({
   tiles,
   cycle,
 }: {
-  tiles: { id: string; photos: string[] }[];
+  tiles: { id: string; photos: string[]; hype?: string | null }[];
   cycle: boolean;
 }) {
   // The lg grid is 6-wide; pad with branded filler tiles so the last row is
@@ -145,7 +146,7 @@ function StaticGrid({
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
       {tiles.map((t) => (
-        <Tile key={t.id} photos={t.photos} cycle={cycle} />
+        <Tile key={t.id} photos={t.photos} cycle={cycle} hype={t.hype} />
       ))}
       {Array.from({ length: padding }).map((_, i) => (
         <LogoTile key={`filler-${i}`} />
@@ -175,7 +176,7 @@ function ScrollStrip({
   tiles,
   cycle,
 }: {
-  tiles: { id: string; photos: string[] }[];
+  tiles: { id: string; photos: string[]; hype?: string | null }[];
   cycle: boolean;
 }) {
   // Split tiles into two staggered rows that scroll in opposite directions.
@@ -217,7 +218,7 @@ function ScrollRow({
   direction,
   speed,
 }: {
-  tiles: { id: string; photos: string[] }[];
+  tiles: { id: string; photos: string[]; hype?: string | null }[];
   cycle: boolean;
   frozen: boolean;
   direction: "left" | "right";
@@ -281,7 +282,7 @@ function ScrollRow({
             key={`${t.id}-${i}`}
             className="w-24 shrink-0 sm:w-32 md:w-36"
           >
-            <Tile photos={t.photos} cycle={cycle} />
+            <Tile photos={t.photos} cycle={cycle} hype={t.hype} />
           </div>
         ))}
       </div>
@@ -289,7 +290,15 @@ function ScrollRow({
   );
 }
 
-function Tile({ photos, cycle }: { photos: string[]; cycle: boolean }) {
+function Tile({
+  photos,
+  cycle,
+  hype,
+}: {
+  photos: string[];
+  cycle: boolean;
+  hype?: string | null;
+}) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -310,6 +319,7 @@ function Tile({ photos, cycle }: { photos: string[]; cycle: boolean }) {
 
   return (
     <div className="relative aspect-square overflow-hidden rounded-sm bg-zinc-900">
+      {hype && <HypePin text={hype} />}
       {prev && prev !== cur && (
         // eslint-disable-next-line @next/next/no-img-element
         <img

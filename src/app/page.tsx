@@ -1,5 +1,6 @@
 import { fetchAllListings, fetchAllPlaces } from "@/lib/data";
 import { readRouteCache, writeRouteCache } from "@/lib/route-cache";
+import { listingHype } from "@/lib/hype";
 import { getTripDates } from "@/lib/trip-server";
 import {
   getCurrentBattle,
@@ -163,7 +164,11 @@ export default async function Home() {
               <>
                 <AddListingForm />
                 <SubmissionPhase
-                  teaser={listings.map((l) => ({ id: l.id, photos: l.photos }))}
+                  teaser={listings.map((l) => ({
+                    id: l.id,
+                    photos: l.photos,
+                    hype: listingHype(l),
+                  }))}
                   mine={
                     cookieVoter
                       ? listings.filter((l) => l.added_by_id === cookieVoter.id)

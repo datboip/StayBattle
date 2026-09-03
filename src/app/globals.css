@@ -333,7 +333,9 @@ html[data-theme="light"] input:-webkit-autofill:focus {
   to { opacity: 1; }
 }
 .sb-tile-fade-in {
-  animation: sb-tile-fade-in 900ms ease-out forwards;
+  /* Crossfade between a tile's cycling photos. Kept gentle (was 900ms)
+     so the swap reads as a soft dissolve, not a flick. */
+  animation: sb-tile-fade-in 1800ms ease-out forwards;
 }
 
 /* Glowing outline for the dark-mode link warning dialog.

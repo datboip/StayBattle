@@ -10,7 +10,11 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 - **`castVote` / `addComment` require battle membership.** They checked identity but not membership or phase, and trusted the client-supplied display name. Votes now require the voting phase, both require membership, and both attribute to the authenticated name rather than whatever the client sends.
 
 ### Added
+- **Hype shows as a pin on the teaser.** A submitter's one-liner (e.g. "Private pool!") now appears as a pushpin note on that listing's tile in the "Current submissions" teaser, so the crew sees the pitch while browsing. (Note: this surfaces each hype to members during the submission phase.)
 - **Drive times are cached.** The listing×place OSRM matrix was recomputed on every 6-second render, which could blow past the public OSRM demo server's 1-request/second limit with a few active voters. A `route_durations` table now caches each pair (a route between two fixed points never changes), so OSRM is only called when a new listing or place adds an uncached pair.
+
+### Changed
+- **Teaser photo crossfade is gentler** (900ms → 1800ms) so cycling reads as a soft dissolve, not a flick.
 
 ### Fixed
 - **Trophy-case delete button only shows for the organizer.** It rendered for any signed-in voter but the server rejected non-organizers, so it silently failed. Now gated to the current battle's organizer, matching the server.
