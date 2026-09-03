@@ -7,6 +7,7 @@ import { useVoter } from "@/lib/voter";
 import { withTripDates, type TripDates } from "@/lib/trip";
 import type { ListingWithStats, VoteValue } from "@/lib/types";
 import { PhotoStrip } from "./PhotoStrip";
+import { Lightbox } from "./Lightbox";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { RatingSlider } from "./RatingSlider";
 import { shortDisplayName } from "@/lib/title";
@@ -34,6 +35,7 @@ export function ReviewMode({
   const [submitting, startTransition] = useTransition();
   const [index, setIndex] = useState(0);
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const stableOrderRef = useRef<ListingWithStats[]>([]);
 
   // Compute a fixed order on first render: unseen first, then seen.
@@ -261,7 +263,11 @@ export function ReviewMode({
         </div>
 
         <div className="px-3 pt-3">
-          <PhotoStrip photos={current.photos} title={current.title} />
+          <PhotoStrip
+            photos={current.photos}
+            title={current.title}
+            onPhotoClick={(i) => setLightboxIndex(i)}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 px-4 py-3 font-mono text-xs sm:grid-cols-4">
@@ -400,6 +406,15 @@ export function ReviewMode({
           )}
         </div>
       </article>
+
+      {current && lightboxIndex !== null && (
+        <Lightbox
+          photos={current.photos}
+          startIndex={lightboxIndex}
+          alt={shortDisplayName(current.title, current.location)}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </section>
   );
 }

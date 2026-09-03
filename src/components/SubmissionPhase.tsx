@@ -8,6 +8,7 @@ import { withTripDates, type TripDates } from "@/lib/trip";
 import { shortDisplayName } from "@/lib/title";
 import type { ListingWithStats } from "@/lib/types";
 import { PhotoStrip } from "./PhotoStrip";
+import { Lightbox } from "./Lightbox";
 import { SubmissionTeaser } from "./SubmissionTeaser";
 import { confirmDialog } from "./Modal";
 
@@ -105,6 +106,7 @@ function MySubmissionCard({
   const router = useRouter();
   const { voter } = useVoter();
   const [isRemoving, startRemove] = useTransition();
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const datedUrl = withTripDates(listing.url, tripDates);
   const fullTitle = listing.title || listing.url;
   const displayName = shortDisplayName(listing.title, listing.location);
@@ -112,7 +114,11 @@ function MySubmissionCard({
   return (
     <article className="sb-fighter-card flex flex-col">
       <div className="px-2 pt-2">
-        <PhotoStrip photos={listing.photos} title={listing.title} />
+        <PhotoStrip
+          photos={listing.photos}
+          title={listing.title}
+          onPhotoClick={(i) => setLightboxIndex(i)}
+        />
       </div>
       <div className="flex flex-col gap-1 px-3 pt-3">
         <a
@@ -163,6 +169,15 @@ function MySubmissionCard({
           remove
         </button>
       </div>
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={listing.photos}
+          startIndex={lightboxIndex}
+          alt={displayName}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </article>
   );
 }
