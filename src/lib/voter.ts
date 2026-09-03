@@ -26,9 +26,17 @@ function readAuth(): Voter | null {
   return null;
 }
 
+// Same-tab change signal. The native `storage` event only fires in OTHER
+// tabs, so without this a sign-out in the header wouldn't update the
+// sign-in gate (a separate useVoter instance) until a manual refresh.
+const AUTH_EVENT = "staybattle:auth-change";
+
 function writeAuth(v: Voter | null) {
   if (v) localStorage.setItem(AUTH_KEY, JSON.stringify(v));
   else localStorage.removeItem(AUTH_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_EVENT));
+  }
 }
 
 export function useVoter(): {
@@ -54,8 +62,15 @@ export function useVoter(): {
     const onStorage = (e: StorageEvent) => {
       if (e.key === AUTH_KEY) setVoterState(readAuth());
     };
+    // Cross-tab (storage) + same-tab (custom event) sync so every useVoter
+    // instance reflects a sign-in/out immediately.
+    const onLocal = () => setVoterState(readAuth());
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(AUTH_EVENT, onLocal);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(AUTH_EVENT, onLocal);
+    };
   }, []);
 
   const setVoter = (v: Voter | null) => {

@@ -3,6 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createBattle } from "@/app/actions";
+import { DateRangeFields } from "@/components/DateRangeFields";
 import { useVoter } from "@/lib/voter";
 
 function defaultDeadline(): string {
@@ -24,8 +25,6 @@ export function BattleSetup() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const nId = useId();
-  const ciId = useId();
-  const coId = useId();
   const dlId = useId();
 
   if (!voter) return null;
@@ -81,31 +80,12 @@ export function BattleSetup() {
           />
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1">
-            <label htmlFor={ciId} className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-              Check-in
-            </label>
-            <input
-              id={ciId}
-              type="date"
-              value={checkIn}
-              onChange={(e) => setCheckIn(e.target.value)}
-              className="rounded-sm border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rose-400"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={coId} className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-              Check-out
-            </label>
-            <input
-              id={coId}
-              type="date"
-              value={checkOut}
-              min={checkIn || undefined}
-              onChange={(e) => setCheckOut(e.target.value)}
-              className="rounded-sm border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-rose-400"
-            />
-          </div>
+          <DateRangeFields
+            checkIn={checkIn}
+            checkOut={checkOut}
+            onCheckIn={setCheckIn}
+            onCheckOut={setCheckOut}
+          />
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor={dlId} className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">

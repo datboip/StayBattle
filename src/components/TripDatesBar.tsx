@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setTripDates } from "@/app/actions";
 import type { TripDates } from "@/lib/trip";
+import { DateRangeFields } from "@/components/DateRangeFields";
 
 function nights(checkIn: string | null, checkOut: string | null): number | null {
   if (!checkIn || !checkOut) return null;
@@ -31,8 +32,6 @@ export function TripDatesBar({ dates }: { dates: TripDates }) {
   const [co, setCo] = useState(dates.checkOut ?? "");
   const [err, setErr] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const ciId = useId();
-  const coId = useId();
 
   const save = (newIn: string, newOut: string) => {
     setErr(null);
@@ -95,31 +94,13 @@ export function TripDatesBar({ dates }: { dates: TripDates }) {
       className="flex flex-wrap items-end gap-2 rounded-sm border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm"
     >
       <span className="sb-fight-label mr-1 text-zinc-300">Trip dates</span>
-      <div className="flex flex-col">
-        <label htmlFor={ciId} className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-          Check-in
-        </label>
-        <input
-          id={ciId}
-          type="date"
-          value={ci}
-          onChange={(e) => setCi(e.target.value)}
-          className="rounded-sm border border-zinc-700 bg-zinc-900/60 px-2 py-1 text-sm text-zinc-100 outline-none focus:border-rose-400"
-        />
-      </div>
-      <div className="flex flex-col">
-        <label htmlFor={coId} className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-          Check-out
-        </label>
-        <input
-          id={coId}
-          type="date"
-          value={co}
-          min={ci || undefined}
-          onChange={(e) => setCo(e.target.value)}
-          className="rounded-sm border border-zinc-700 bg-zinc-900/60 px-2 py-1 text-sm text-zinc-100 outline-none focus:border-rose-400"
-        />
-      </div>
+      <DateRangeFields
+        checkIn={ci}
+        checkOut={co}
+        onCheckIn={setCi}
+        onCheckOut={setCo}
+        compact
+      />
       <button
         type="submit"
         disabled={isPending || (!ci && !co)}
