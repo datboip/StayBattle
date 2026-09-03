@@ -27,6 +27,12 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+# Runtime copy of the TLS flag: the voter cookie's Secure attribute is
+# decided per request (src/lib/auth-cookie.ts), unlike the headers which
+# were baked at build time. Override at run time with
+# `environment: STAYBATTLE_HTTPS=true` in docker-compose if needed.
+ARG STAYBATTLE_HTTPS=false
+ENV STAYBATTLE_HTTPS=$STAYBATTLE_HTTPS
 
 # Drop privileges
 RUN addgroup --system --gid 1001 nodejs && \

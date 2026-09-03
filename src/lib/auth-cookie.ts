@@ -30,15 +30,32 @@ const MAX_AGE = 60 * 60 * 24 * 90; // 90 days
 
 export type CookieVoter = { id: string; name: string };
 
-export async function setVoterCookie(voter: CookieVoter): Promise<void> {
-  const jar = await cookies();
-  jar.set(COOKIE, JSON.stringify(voter), {
+/**
+ * Cookie attributes, split out so they can be unit-tested without a
+ * request scope.
+ *
+ * `secure` is opt-in via STAYBATTLE_HTTPS=true rather than tied to
+ * NODE_ENV: browsers drop Secure cookies on any plain-http origin except
+ * localhost, so a production build served at http://192.168.x.x:3000 (the
+ * documented `docker compose up` path) would "sign in" client-side while
+ * every server action answered "Sign in first". Same flag that gates
+ * HSTS / upgrade-insecure-requests in src/lib/security-headers.ts.
+ */
+export function voterCookieOptions(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return {
     maxAge: MAX_AGE,
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    secure: env.STAYBATTLE_HTTPS === "true",
     path: "/",
-  });
+  };
+}
+
+export async function setVoterCookie(voter: CookieVoter): Promise<void> {
+  const jar = await cookies();
+  jar.set(COOKIE, JSON.stringify(voter), voterCookieOptions());
 }
 
 export async function clearVoterCookie(): Promise<void> {
