@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 const SCRYPT_KEYLEN = 32;
 const SALT_BYTES = 16;
@@ -37,4 +37,34 @@ export function isValidPin(pin: string): boolean {
 export function normalizeName(name: string): string {
   // Case-insensitive, whitespace-collapsed canonical key for uniqueness.
   return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+
+/**
+ * HMAC-sign a cookie payload so a client can't forge it. Format is
+ * `<base64url(payload)>.<base64url(hmac)>`. The payload is base64url-encoded
+ * so it never contains the "." separator. `verifyPayload` returns the original
+ * payload only when the signature matches (constant-time), else null.
+ */
+export function signPayload(payload: string, secret: string): string {
+  const p64 = Buffer.from(payload, "utf8").toString("base64url");
+  const sig = createHmac("sha256", secret).update(p64).digest("base64url");
+  return `${p64}.${sig}`;
+}
+
+export function verifyPayload(signed: string, secret: string): string | null {
+  if (typeof signed !== "string") return null;
+  const parts = signed.split(".");
+  if (parts.length !== 2) return null;
+  const [p64, sig] = parts;
+  if (!p64 || !sig) return null;
+  const expected = createHmac("sha256", secret).update(p64).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    return Buffer.from(p64, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
 }

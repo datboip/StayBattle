@@ -82,6 +82,11 @@ export default async function Home() {
   const isMember = !!(
     battle && cookieVoter && isParticipant(battle.id, cookieVoter.id)
   );
+  // Only the current battle's organizer may delete past battles (server
+  // enforces it too) — gate the trophy-case delete button to match.
+  const canManagePast = !!(
+    battle && cookieVoter && battle.organizer_id === cookieVoter.id
+  );
 
   const listings = isMember ? fetchAllListings() : [];
   const places = isMember ? fetchAllPlaces() : [];
@@ -123,12 +128,12 @@ export default async function Home() {
         {!battle ? (
           <>
             <BattleSetup />
-            <TrophyCase past={pastBattles} />
+            <TrophyCase past={pastBattles} canManage={canManagePast} />
           </>
         ) : !isMember ? (
           <>
             <JoinGate battle={publicBattle!} />
-            <TrophyCase past={pastBattles} />
+            <TrophyCase past={pastBattles} canManage={canManagePast} />
           </>
         ) : (
           <>
@@ -138,7 +143,15 @@ export default async function Home() {
             {battle.phase === "submission" ? (
               <>
                 <AddListingForm />
-                <SubmissionPhase listings={listings} tripDates={tripDates} />
+                <SubmissionPhase
+                  teaser={listings.map((l) => ({ id: l.id, photos: l.photos }))}
+                  mine={
+                    cookieVoter
+                      ? listings.filter((l) => l.added_by_id === cookieVoter.id)
+                      : []
+                  }
+                  tripDates={tripDates}
+                />
               </>
             ) : (
               <>
@@ -162,7 +175,7 @@ export default async function Home() {
                 />
               </>
             )}
-            <TrophyCase past={pastBattles} />
+            <TrophyCase past={pastBattles} canManage={canManagePast} />
           </>
         )}
 

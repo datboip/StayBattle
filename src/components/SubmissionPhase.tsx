@@ -23,14 +23,17 @@ import { confirmDialog } from "./Modal";
  * comment on their own listing).
  */
 export function SubmissionPhase({
-  listings,
+  teaser,
+  mine,
   tripDates,
 }: {
-  listings: ListingWithStats[];
+  /** Minimal, non-owner-safe tiles: only id + photos leave the server. */
+  teaser: { id: string; photos: string[] }[];
+  /** Full detail for the current voter's OWN submissions only. */
+  mine: ListingWithStats[];
   tripDates: TripDates;
 }) {
   const router = useRouter();
-  const { voter } = useVoter();
 
   // Re-poll every 6 seconds for freshly added listings from others.
   useEffect(() => {
@@ -38,24 +41,19 @@ export function SubmissionPhase({
     return () => clearInterval(id);
   }, [router]);
 
-  const mine = useMemo(
-    () => (voter ? listings.filter((l) => l.added_by_id === voter.id) : []),
-    [listings, voter],
-  );
-
   return (
     <section className="flex flex-col gap-6">
       {/* Current submissions teaser */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-x-3 gap-y-0.5 sm:flex-row sm:items-baseline sm:justify-between">
           <h3 className="sb-fight-label whitespace-nowrap text-zinc-200">
-            Current submissions · {listings.length}
+            Current submissions · {teaser.length}
           </h3>
           <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-500 sm:text-[10px]">
             Photos only · titles + votes hidden until battle starts
           </span>
         </div>
-        <SubmissionTeaser listings={listings} />
+        <SubmissionTeaser listings={teaser} />
       </div>
 
       {/* User's own submissions */}

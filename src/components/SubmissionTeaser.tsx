@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ListingWithStats } from "@/lib/types";
 
 const PREFS_KEY = "staybattle:teaser:v2";
 const SCROLL_PX_PER_SEC = 28;
@@ -54,7 +53,11 @@ function savePrefs(p: Prefs) {
  * Toggles are independent and persist in localStorage. Both default to ON
  * unless the user's OS has prefers-reduced-motion set.
  */
-export function SubmissionTeaser({ listings }: { listings: ListingWithStats[] }) {
+export function SubmissionTeaser({
+  listings,
+}: {
+  listings: { id: string; photos: string[] }[];
+}) {
   const [prefs, setPrefs] = useState<Prefs>({ scroll: false, cycle: false });
   const [mounted, setMounted] = useState(false);
 

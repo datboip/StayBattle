@@ -349,8 +349,12 @@ export async function castVote(
   voterName: string,
   value: 0 | 1 | 2 | 3 | 4 | 5,
 ): Promise<ActionResult> {
-  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  const auth = await requireMember();
   if (!auth.ok) return auth;
+  // Votes only count once the battle is actually in its voting phase.
+  if (auth.battle.phase !== "voting") {
+    return { ok: false, error: "Voting isn't open yet." };
+  }
   const vid = auth.voter.id;
   const id = cleanString(listingId, 64);
   if (!id) return { ok: false, error: "Missing id" };
@@ -370,7 +374,8 @@ export async function castVote(
     return { ok: false, error: "Can't rate your own listing" };
   }
 
-  const name = cleanString(voterName, NAME_MAX) || auth.voter.name;
+  // Always attribute to the authenticated name, never the client-supplied one.
+  const name = auth.voter.name;
 
   if (value === 0) {
     db.prepare(
@@ -397,7 +402,7 @@ export async function addComment(
   body: string,
   parentId: string = "",
 ): Promise<ActionResult> {
-  const auth = await requireSelf(cleanString(voterId, VOTER_ID_MAX));
+  const auth = await requireMember();
   if (!auth.ok) return auth;
   const vid = auth.voter.id;
   const id = cleanString(listingId, 64);
@@ -407,7 +412,8 @@ export async function addComment(
   if (!text) return { ok: false, error: "Empty comment" };
   if (!consume(`comment:${vid}`, LIMITS.comment)) return RATE_LIMITED;
 
-  const name = cleanString(voterName, NAME_MAX) || auth.voter.name;
+  // Attribute to the authenticated name, never the client-supplied one.
+  const name = auth.voter.name;
 
   // If a parent is given, sanity check that it belongs to the same listing
   // and isn't itself a reply (keep nesting flat at one level).

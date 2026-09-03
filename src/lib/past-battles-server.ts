@@ -90,8 +90,7 @@ export function archiveCurrentBattle(battle: {
               coalesce(count(v.value), 0) as vote_count
          from listings l
          left join votes v on v.listing_id = l.id
-        where coalesce(l.availability_status, 'unknown') != 'unavailable'
-           or l.availability_override is not null
+        where coalesce(l.availability_override_status, l.availability_status, 'unknown') != 'unavailable'
         group by l.id`,
     )
     .all() as Array<{

@@ -1,5 +1,8 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { randomBytes } from "node:crypto";
+import { db } from "./db";
+import { signPayload, verifyPayload } from "./auth";
 
 /**
  * Server-side voter identity cookie.
@@ -53,9 +56,29 @@ export function voterCookieOptions(
   };
 }
 
+/**
+ * Server-only HMAC secret for signing the voter cookie. Auto-generated once
+ * and persisted in the settings table (i.e. the data dir), so it survives
+ * restarts but never ships in the repo or image. If the row is ever lost,
+ * a new secret is minted and all existing sessions are invalidated — the
+ * safe failure direction.
+ */
+function authSecret(): string {
+  const row = db
+    .prepare("select value from settings where key = 'auth_secret'")
+    .get() as { value: string } | undefined;
+  if (row?.value) return row.value;
+  const secret = randomBytes(32).toString("hex");
+  db.prepare(
+    "insert or replace into settings (key, value) values ('auth_secret', ?)",
+  ).run(secret);
+  return secret;
+}
+
 export async function setVoterCookie(voter: CookieVoter): Promise<void> {
   const jar = await cookies();
-  jar.set(COOKIE, JSON.stringify(voter), voterCookieOptions());
+  const signed = signPayload(JSON.stringify(voter), authSecret());
+  jar.set(COOKIE, signed, voterCookieOptions());
 }
 
 export async function clearVoterCookie(): Promise<void> {
@@ -67,8 +90,12 @@ export async function readVoterCookie(): Promise<CookieVoter | null> {
   const jar = await cookies();
   const raw = jar.get(COOKIE)?.value;
   if (!raw) return null;
+  // Reject anything that isn't a valid HMAC-signed payload — this is what
+  // stops a client from hand-editing the cookie to another voter's id.
+  const verified = verifyPayload(raw, authSecret());
+  if (!verified) return null;
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(verified);
     if (
       parsed &&
       typeof parsed.id === "string" &&

@@ -4,7 +4,15 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Security
+- **Voter cookie is now HMAC-signed.** It was unsigned JSON, and members receive the organizer's `voter_id` in the page payload — so a member could hand-edit the cookie to the organizer's id and take over the battle (close it, kick people, roll the invite code). The cookie is signed with a per-instance secret auto-generated and persisted in the data dir; a forged or tampered cookie is rejected. Existing sessions are invalidated once (everyone re-signs in).
+- **Submission photos stay blind against members too.** During the submission phase the server sent every member the full listing objects (URLs, titles, coordinates, comments, submitter ids) and only hid them visually. Non-owned submissions now leave the server as `{ id, photos }` only; full detail is sent for your own submissions.
+- **`castVote` / `addComment` require battle membership.** They checked identity but not membership or phase, and trusted the client-supplied display name. Votes now require the voting phase, both require membership, and both attribute to the authenticated name rather than whatever the client sends.
+
 ### Fixed
+- **Trophy-case delete button only shows for the organizer.** It rendered for any signed-in voter but the server rejected non-organizers, so it silently failed. Now gated to the current battle's organizer, matching the server.
+- **Closed battles respect organizer availability overrides in the podium.** The trophy calc kept a listing if it had any override at all; a listing the organizer marked "booked" could still win. It now uses the override's direction (`availability_override_status`).
+- **Listing cards show price and cancellation policy.** Both were scraped and stored but never rendered.
 - **Airbnb UI icons no longer show up as listing photos.** The scrape's host-allowlist accepted any `muscache.com` URL, so Airbnb's own platform illustrations (`/im/pictures/airbnb-platform-assets/…` search-bar icons, the little-house and cartoon-person graphics) and host avatars leaked into the photo carousel. A stricter `isListingPhotoUrl()` now rejects those paths in both the GraphQL and HTML scrape paths; existing rows can be cleaned by re-scraping.
 - **Submissions teaser: "Frozen" now stops the scroll.** It previously only froze each tile's photo rotation, leaving the marquee drifting — so in the scrolling view "Frozen" looked like it did nothing. It now halts the scroll too.
 - **Submissions teaser: no more blank gap in the scrolling strip.** With few submissions a row was narrower than the screen and the wrap-around exposed an empty tile; rows now repeat enough to always fill the width.

@@ -153,6 +153,16 @@ export function ListingCard({
         <StatRow label="Beds" value={listing.beds ?? "—"} />
         <StatRow label="Sleeps" value={listing.max_guests ?? "—"} />
         <StatRow
+          label="Price"
+          value={
+            listing.price_display ? (
+              <span className="text-zinc-100">{listing.price_display}</span>
+            ) : (
+              "—"
+            )
+          }
+        />
+        <StatRow
           label="Rating"
           value={
             listing.rating != null ? (
@@ -162,6 +172,16 @@ export function ListingCard({
                   <span className="ml-1 text-zinc-400">({listing.review_count})</span>
                 )}
               </span>
+            ) : (
+              "—"
+            )
+          }
+        />
+        <StatRow
+          label="Cancellation"
+          value={
+            listing.cancellation_policy ? (
+              <span className="text-zinc-300">{listing.cancellation_policy}</span>
             ) : (
               "—"
             )

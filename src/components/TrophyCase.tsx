@@ -19,7 +19,14 @@ const MEDAL_LABEL: Record<1 | 2 | 3, string> = {
  * shows just month/year, the medal tiers, and summary counts. Comments and
  * individual votes are gone from this view.
  */
-export function TrophyCase({ past }: { past: PastBattle[] }) {
+export function TrophyCase({
+  past,
+  canManage = false,
+}: {
+  past: PastBattle[];
+  /** True only for the current battle's organizer — the only one the server lets delete. */
+  canManage?: boolean;
+}) {
   if (past.length === 0) return null;
   return (
     <section className="flex flex-col gap-3">
@@ -28,7 +35,7 @@ export function TrophyCase({ past }: { past: PastBattle[] }) {
       </h2>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {past.map((b) => (
-          <PastBattleCard key={b.id} past={b} />
+          <PastBattleCard key={b.id} past={b} canManage={canManage} />
         ))}
       </div>
     </section>
@@ -70,7 +77,13 @@ function groupByTier(podium: PodiumEntry[]): Map<1 | 2 | 3, PodiumEntry[]> {
   return out;
 }
 
-function PastBattleCard({ past }: { past: PastBattle }) {
+function PastBattleCard({
+  past,
+  canManage,
+}: {
+  past: PastBattle;
+  canManage: boolean;
+}) {
   const router = useRouter();
   const { voter } = useVoter();
   const [isPending, startTransition] = useTransition();
@@ -185,7 +198,7 @@ function PastBattleCard({ past }: { past: PastBattle }) {
           </p>
         </div>
 
-        {voter && (
+        {canManage && (
           <button
             type="button"
             onClick={remove}
