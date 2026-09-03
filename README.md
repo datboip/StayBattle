@@ -59,7 +59,7 @@ That's it. Opens at <http://localhost:3000> **on the machine you ran the install
 
 > ⚠️ **Pin a release tag**, don't track `main`. The one-liner above grabs whatever's on `main` right now. To pin a known-good version:
 > ```bash
-> STAYBATTLE_TAG=v0.4.3 sh <(curl -fsSL https://raw.githubusercontent.com/datboip/StayBattle/v0.4.3/install.sh)
+> STAYBATTLE_TAG=v0.4.4 sh <(curl -fsSL https://raw.githubusercontent.com/datboip/StayBattle/v0.4.4/install.sh)
 > ```
 
 <details>

@@ -1,6 +1,6 @@
 {
   "name": "staybattle",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Self-hosted vacation rental voting app. Crew votes on Airbnb listings, argues in the comments, settles it on a map.",
   "private": true,
   "license": "AGPL-3.0-only",

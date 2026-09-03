@@ -4,6 +4,10 @@ All notable changes to StayBattle. Format loosely follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.4.4] — 2026-09-03
+
+Security hardening from an external review, plus availability, teaser, and photo fixes.
+
 ### Security
 - **Voter cookie is now HMAC-signed.** It was unsigned JSON, and members receive the organizer's `voter_id` in the page payload — so a member could hand-edit the cookie to the organizer's id and take over the battle (close it, kick people, roll the invite code). The cookie is signed with a per-instance secret auto-generated and persisted in the data dir; a forged or tampered cookie is rejected. Existing sessions are invalidated once (everyone re-signs in).
 - **Submission photos stay blind against members too.** During the submission phase the server sent every member the full listing objects (URLs, titles, coordinates, comments, submitter ids) and only hid them visually. Non-owned submissions now leave the server as `{ id, photos }` only; full detail is sent for your own submissions.
