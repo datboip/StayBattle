@@ -32,7 +32,15 @@ try {
   })
     .toString()
     .trim();
-  dirty = status.length > 0;
+  // Ignore package-lock.json when judging "dirty": `npm install` on a
+  // deploy host (e.g. the demo VPS) rewrites a couple of its lines every
+  // build, which would otherwise stamp every production build as dirty.
+  const dirtyLines = status
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .filter((l) => !l.endsWith("package-lock.json"));
+  dirty = dirtyLines.length > 0;
 } catch {
   // Not a git checkout (e.g. tarball install) — leave as "dev".
 }
